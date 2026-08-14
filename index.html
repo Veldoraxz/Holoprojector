@@ -144,23 +144,23 @@
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
     const baseRadius = 118;
-    const pulse = baseRadius + Math.sin(t * 0.12) * 8 + voiceIntensity * 70;
+    const pulse = baseRadius + Math.sin(t * 0.09) * 6 + voiceIntensity * 28;
 
-    const glow = ctx.createRadialGradient(cx, cy, 12, cx, cy, pulse + 80);
-    glow.addColorStop(0, 'rgba(255, 210, 220, 0.95)');
-    glow.addColorStop(0.22, 'rgba(255, 170, 190, 0.72)');
-    glow.addColorStop(0.52, 'rgba(255, 120, 150, 0.36)');
+    const glow = ctx.createRadialGradient(cx, cy, 12, cx, cy, pulse + 70);
+    glow.addColorStop(0, 'rgba(255, 210, 220, 0.82)');
+    glow.addColorStop(0.22, 'rgba(255, 170, 190, 0.5)');
+    glow.addColorStop(0.52, 'rgba(255, 120, 150, 0.22)');
     glow.addColorStop(1, 'rgba(255, 90, 130, 0)');
 
     ctx.beginPath();
     ctx.fillStyle = glow;
-    ctx.arc(cx, cy, pulse + 70, 0, Math.PI * 2);
+    ctx.arc(cx, cy, pulse + 58, 0, Math.PI * 2);
     ctx.fill();
 
     const core = ctx.createRadialGradient(cx, cy, 10, cx, cy, pulse);
-    core.addColorStop(0, 'rgba(255,245,248,0.98)');
-    core.addColorStop(0.2, 'rgba(255,188,204,0.9)');
-    core.addColorStop(0.55, 'rgba(255,140,170,0.6)');
+    core.addColorStop(0, 'rgba(255,245,248,0.85)');
+    core.addColorStop(0.2, 'rgba(255,188,204,0.75)');
+    core.addColorStop(0.55, 'rgba(255,140,170,0.42)');
     core.addColorStop(1, 'rgba(255,115,150,0)');
 
     ctx.beginPath();
@@ -169,20 +169,20 @@
     ctx.fill();
 
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255, 150, 180, 0.7)';
+    ctx.strokeStyle = 'rgba(255, 150, 180, 0.6)';
     ctx.lineWidth = 2;
-    ctx.arc(cx, cy, baseRadius + 18 + voiceIntensity * 18, 0, Math.PI * 2);
+    ctx.arc(cx, cy, baseRadius + 14 + voiceIntensity * 12, 0, Math.PI * 2);
     ctx.stroke();
 
     t += 1;
-    voiceIntensity *= 0.9;
+    voiceIntensity *= 0.88;
     requestAnimationFrame(drawOrb);
   }
 
   drawOrb();
 
   function triggerPulse(intensity) {
-    voiceIntensity = Math.max(voiceIntensity, Math.min(1, intensity));
+    voiceIntensity = Math.max(voiceIntensity, Math.min(0.9, intensity));
   }
 
   function startSpeechPulseLoop() {
@@ -190,9 +190,9 @@
 
     speechPulseTimer = setInterval(() => {
       if (!isSpeaking) return;
-      const intensity = 0.45 + Math.random() * 0.55;
+      const intensity = 0.2 + Math.random() * 0.35;
       triggerPulse(intensity);
-    }, 140);
+    }, 170);
   }
 
   function stopSpeechPulseLoop() {
