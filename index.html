@@ -126,6 +126,16 @@
 
   let conversationHistory = [];
 
+  const interruptResponses = [
+    { text: '¿eh?', tone: 'confused' },
+    { text: 'Dale, me callé.', tone: 'compliant' },
+    { text: 'Bueno, bueno...', tone: 'compliant' },
+    { text: 'Me cortaste en lo mejor.', tone: 'sarcastic' },
+    { text: 'Ñeeee...', tone: 'confused' },
+    { text: 'Ok, ok, me silenciás.', tone: 'compliant' },
+    { text: 'Ay, espera que iba para mejor esto.', tone: 'sarcastic' }
+  ];
+
   const statusEl = document.getElementById('status');
   const subtitlesEl = document.getElementById('subtitles');
   const startBtn = document.getElementById('startBtn');
@@ -380,7 +390,7 @@
 
     utterance.onstart = () => {
       isSpeaking = true;
-      setStatus('Kit: ' + texto);
+      setStatus('Hablando...');
       showWords(texto);
       startSpeechPulseLoop();
       startBtn.style.display = 'block';
@@ -436,18 +446,57 @@
     setStatus('Este navegador no soporta reconocimiento de voz.');
   }
 
-  startBtn.addEventListener('click', () => {
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
+  function playInterruptResponse() {
+    const response = interruptResponses[Math.floor(Math.random() * interruptResponses.length)];
+    
+    const triggerFlash = () => {
+      voiceIntensity = 0.6;
+      setTimeout(() => { voiceIntensity = 0; }, 150);
+    };
+    
+    triggerFlash();
+    
+    if (!('speechSynthesis' in window)) return;
+    
+    isSpeaking = true;
+    window.speechSynthesis.cancel();
+    subtitlesEl.innerHTML = '';
+    
+    const textoParaLeer = convertSymbolsToWords(response.text);
+    const utterance = new SpeechSynthesisUtterance(textoParaLeer);
+    utterance.lang = 'es-AR';
+    utterance.rate = 1.1;
+    utterance.pitch = response.tone === 'confused' ? 1.35 : 1.15;
+    utterance.volume = 1;
+    
+    const voice = chooseSpanishVoice();
+    if (voice) utterance.voice = voice;
+    
+    utterance.onstart = () => {
+      setStatus('Kit: ' + response.text);
+      showWords(response.text);
+      startSpeechPulseLoop();
+    };
+    
+    utterance.onend = () => {
       isSpeaking = false;
       stopSpeechPulseLoop();
-      subtitlesEl.innerHTML = '';
       setStatus('Escuchando...');
       startBtn.textContent = 'Iniciar Kit';
       startBtn.style.display = 'none';
-      if (recognition && !isProcessing) {
-        try { recognition.start(); } catch (err) {}
-      }
+      setTimeout(() => {
+        if (recognition && !isProcessing) {
+          try { recognition.start(); } catch (err) {}
+        }
+      }, 500);
+    };
+    
+    window.speechSynthesis.speak(utterance);
+  }
+
+  startBtn.addEventListener('click', () => {
+    if (isSpeaking) {
+      playInterruptResponse();
     } else {
       startBtn.style.display = 'none';
       startListening();
@@ -456,16 +505,7 @@
 
   canvas.addEventListener('click', () => {
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      isSpeaking = false;
-      stopSpeechPulseLoop();
-      subtitlesEl.innerHTML = '';
-      setStatus('Escuchando...');
-      startBtn.textContent = 'Iniciar Kit';
-      startBtn.style.display = 'none';
-      if (recognition && !isProcessing) {
-        try { recognition.start(); } catch (err) {}
-      }
+      playInterruptResponse();
     }
   });
 </script>
