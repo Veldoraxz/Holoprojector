@@ -43,8 +43,8 @@
 
   @media (max-width: 768px) {
     canvas {
-      width: min(92vmin, 620px);
-      height: min(92vmin, 620px);
+      width: min(92vw, 700px);
+      height: min(92vw, 700px);
     }
   }
 
@@ -121,7 +121,7 @@
 </head>
 <body>
 
-<button id="startBtn">Iniciar Kit</button>
+<button id="startBtn">Iniciar</button>
 <canvas id="orb" width="600" height="600"></canvas>
 <div id="subtitles"></div>
 <div id="status">Esperando...</div>
@@ -141,6 +141,7 @@
   let conversationHistory = [];
   let responseMode = 'compact';
   let currentSpeechId = 0;
+  let hasStartedOnce = false;
 
   try {
     const saved = sessionStorage.getItem(SESSION_KEY);
@@ -452,7 +453,6 @@
       setStatus('Hablando...');
       showWords(texto);
       startSpeechPulseLoop();
-      startBtn.style.display = 'block';
       startBtn.textContent = 'Cortar';
     };
 
@@ -466,8 +466,7 @@
       isSpeaking = false;
       stopSpeechPulseLoop();
       setStatus('Escuchando...');
-      startBtn.textContent = 'Iniciar Kit';
-      startBtn.style.display = 'none';
+      setResponseMode(responseMode);
       setTimeout(() => {
         if (recognition && !isProcessing) {
           try { recognition.start(); } catch (err) {}
@@ -550,8 +549,7 @@
       isSpeaking = false;
       stopSpeechPulseLoop();
       setStatus('Escuchando...');
-      startBtn.textContent = 'Iniciar Kit';
-      startBtn.style.display = 'none';
+      setResponseMode(responseMode);
       setTimeout(() => {
         if (recognition && !isProcessing) {
           try { recognition.start(); } catch (err) {}
@@ -572,25 +570,28 @@
       return;
     }
 
-    if (isListening || isProcessing) {
-      startBtn.textContent = isCompact ? 'Modo breve' : 'Modo extendido';
+    if (!hasStartedOnce) {
+      startBtn.textContent = 'Iniciar';
       return;
     }
 
     startBtn.textContent = isCompact ? 'Modo breve' : 'Modo extendido';
   }
 
+  function setHoverState() {
+    if (isSpeaking || !hasStartedOnce) return;
+    startBtn.textContent = 'Cambiar modo';
+  }
+
   startBtn.addEventListener('mouseenter', () => {
-    if (!isSpeaking) {
-      const nextMode = responseMode === 'compact' ? 'detailed' : 'compact';
-      startBtn.textContent = nextMode === 'compact' ? 'Cambiar a breve' : 'Cambiar a extendido';
+    if (!isSpeaking && hasStartedOnce) {
+      setHoverState();
     }
   });
 
   startBtn.addEventListener('mouseleave', () => {
-    if (!isSpeaking) {
-      const modeLabel = responseMode === 'compact' ? 'breve' : 'extendido';
-      startBtn.textContent = 'Modo ' + modeLabel;
+    if (!isSpeaking && hasStartedOnce) {
+      setResponseMode(responseMode);
     }
   });
 
@@ -604,11 +605,17 @@
       return;
     }
 
+    if (!hasStartedOnce) {
+      hasStartedOnce = true;
+      setResponseMode(responseMode);
+      startListening();
+      return;
+    }
+
     const nextMode = responseMode === 'compact' ? 'detailed' : 'compact';
     responseMode = nextMode;
     setResponseMode(nextMode);
     setStatus(nextMode === 'compact' ? 'Modo breve activo.' : 'Modo extendido activo.');
-    startListening();
   });
 
   canvas.addEventListener('click', () => {
