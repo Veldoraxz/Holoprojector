@@ -4,71 +4,114 @@
 <meta charset="UTF-8">
 <title>Kit</title>
 <style>
+  :root {
+    --bg: #05070d;
+    --line: rgba(255, 160, 180, 0.36);
+    --pink: #ff8da1;
+    --pink-soft: rgba(255, 141, 161, 0.75);
+    --text: rgba(255,255,255,0.9);
+  }
+
+  * { box-sizing: border-box; }
+
   html, body {
     margin: 0;
-    padding: 0;
-    background: #000;
+    width: 100%;
     height: 100%;
+    background:
+      radial-gradient(circle at center, rgba(255, 130, 160, 0.14), transparent 30%),
+      linear-gradient(180deg, #03060b 0%, #080b15 100%);
     overflow: hidden;
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
   }
+
   body {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
+  .hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0));
+  }
+
   canvas {
     display: block;
-    width: 90vmin;
-    height: 90vmin;
-    max-width: 500px;
-    max-height: 500px;
+    width: min(82vmin, 520px);
+    height: min(82vmin, 520px);
+    filter: drop-shadow(0 0 22px rgba(255, 130, 160, 0.3));
+    opacity: 0.98;
   }
+
   #subtitles {
     position: absolute;
-    bottom: 130px;
-    width: 100%;
+    left: 0;
+    right: 0;
+    bottom: 122px;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 4px;
-    padding: 0 30px;
-    box-sizing: border-box;
+    gap: 6px 10px;
+    padding: 0 26px;
+    pointer-events: none;
   }
+
   .word {
-    color: rgba(255,255,255,0.85);
-    font-family: sans-serif;
-    font-size: 16px;
+    color: rgba(255,255,255,0.9);
+    font-size: clamp(14px, 2.2vmin, 18px);
+    line-height: 1.4;
     opacity: 1;
-    transition: opacity 1s ease;
+    transition: opacity 0.9s ease, transform 0.9s ease;
+    transform: translateY(0);
+    text-shadow: 0 0 12px rgba(255,255,255,0.2);
   }
+
   .word.fading {
     opacity: 0;
+    transform: translateY(4px);
   }
+
   #status {
     position: absolute;
-    bottom: 90px;
-    width: 100%;
+    left: 50%;
+    bottom: 82px;
+    transform: translateX(-50%);
+    width: min(90vw, 700px);
     text-align: center;
-    color: #ff8da1;
-    font-family: sans-serif;
+    color: var(--pink);
     font-size: 13px;
-    padding: 0 20px;
-    box-sizing: border-box;
-    opacity: 0.7;
+    letter-spacing: 0.04em;
+    opacity: 0.8;
+    text-shadow: 0 0 12px rgba(255, 141, 161, 0.3);
+    pointer-events: none;
   }
+
   #startBtn {
     position: absolute;
-    bottom: 30px;
     left: 50%;
+    bottom: 28px;
     transform: translateX(-50%);
     padding: 12px 28px;
-    background: transparent;
-    border: 1px solid rgba(255,141,161,0.35);
-    border-radius: 30px;
-    color: rgba(255,141,161,0.75);
-    font-family: sans-serif;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.02);
+    color: var(--pink-soft);
     font-size: 13px;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 0 18px rgba(255, 141, 161, 0.12);
+  }
+
+  #startBtn:hover {
+    transform: translateX(-50%) scale(1.02);
+    box-shadow: 0 0 22px rgba(255, 141, 161, 0.2);
   }
 </style>
 </head>
@@ -80,230 +123,251 @@
 <div id="status">Esperando...</div>
 
 <script>
-// ---------- CONFIG ----------
-const GROQ_API_KEY = "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";
-const GROQ_MODEL = "openai/gpt-oss-120b";
-const PIPER_VOICE_ID = "es_AR-daniela-high";
-let isSpeaking = false;
+  const GROQ_API_KEY = "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";
+  const GROQ_MODEL = "openai/gpt-oss-120b";
+  const assistantName = "Kit";
+  const statusEl = document.getElementById('status');
+  const subtitlesEl = document.getElementById('subtitles');
+  const startBtn = document.getElementById('startBtn');
 
-// ---------- ORBE ANIMADO ----------
-const canvas = document.getElementById('orb');
-const ctx = canvas.getContext('2d');
-let volume = 0; // 0 a 1, controla el "pulso" del orbe
-let t = 0;
+  let isSpeaking = false;
+  let voiceIntensity = 0;
 
-function drawOrb() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
-  const baseRadius = 130;
-  const pulse = baseRadius + Math.sin(t * 0.1) * 5 + volume * 40;
+  const canvas = document.getElementById('orb');
+  const ctx = canvas.getContext('2d');
+  let t = 0;
 
-  const gradient = ctx.createRadialGradient(cx, cy, 10, cx, cy, pulse);
-  gradient.addColorStop(0, "rgba(255,160,180,0.9)");
-  gradient.addColorStop(0.5, "rgba(255,120,150,0.4)");
-  gradient.addColorStop(1, "rgba(255,90,130,0)");
+  function drawOrb() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.beginPath();
-  ctx.fillStyle = gradient;
-  ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
-  ctx.fill();
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const baseRadius = 118;
+    const pulse = baseRadius + Math.sin(t * 0.12) * 8 + voiceIntensity * 70;
 
-  // anillo
-  ctx.beginPath();
-  ctx.strokeStyle = "rgba(255,141,161,0.6)";
-  ctx.lineWidth = 2;
-  ctx.arc(cx, cy, baseRadius + 20 + volume * 20, 0, Math.PI * 2);
-  ctx.stroke();
+    const glow = ctx.createRadialGradient(cx, cy, 12, cx, cy, pulse + 80);
+    glow.addColorStop(0, 'rgba(255, 210, 220, 0.95)');
+    glow.addColorStop(0.22, 'rgba(255, 170, 190, 0.72)');
+    glow.addColorStop(0.52, 'rgba(255, 120, 150, 0.36)');
+    glow.addColorStop(1, 'rgba(255, 90, 130, 0)');
 
-  t++;
-  volume *= 0.93; // decae más suave, pulso menos abrupto
-  requestAnimationFrame(drawOrb);
-}
-drawOrb();
+    ctx.beginPath();
+    ctx.fillStyle = glow;
+    ctx.arc(cx, cy, pulse + 70, 0, Math.PI * 2);
+    ctx.fill();
 
-// ---------- RECONOCIMIENTO DE VOZ ----------
-const statusEl = document.getElementById('status');
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-recognition.lang = "es-AR";
-recognition.continuous = false;
-recognition.interimResults = false;
+    const core = ctx.createRadialGradient(cx, cy, 10, cx, cy, pulse);
+    core.addColorStop(0, 'rgba(255,245,248,0.98)');
+    core.addColorStop(0.2, 'rgba(255,188,204,0.9)');
+    core.addColorStop(0.55, 'rgba(255,140,170,0.6)');
+    core.addColorStop(1, 'rgba(255,115,150,0)');
 
-recognition.onstart = () => statusEl.textContent = "Escuchando...";
-recognition.onerror = (e) => statusEl.textContent = "Error: " + e.error;
+    ctx.beginPath();
+    ctx.fillStyle = core;
+    ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+    ctx.fill();
 
-recognition.onresult = async (event) => {
-  const texto = event.results[0][0].transcript;
-  statusEl.textContent = "Vos: " + texto;
-  const respuesta = await preguntarGroq(texto);
-  statusEl.textContent = "Kit: " + respuesta;
-  hablar(respuesta);
-};
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255, 150, 180, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.arc(cx, cy, baseRadius + 18 + voiceIntensity * 18, 0, Math.PI * 2);
+    ctx.stroke();
 
-recognition.onend = () => {
-  if (!isSpeaking) {
+    t += 1;
+    voiceIntensity *= 0.9;
+    requestAnimationFrame(drawOrb);
+  }
+
+  drawOrb();
+
+  function triggerPulse(intensity) {
+    voiceIntensity = Math.max(voiceIntensity, intensity);
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'es-AR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      statusEl.textContent = 'Escuchando...';
+    };
+
+    recognition.onerror = (event) => {
+      console.error('SpeechRecognition error:', event.error);
+      statusEl.textContent = 'No pude escuchar. Reintentando...';
+      if (!isSpeaking) {
+        setTimeout(() => {
+          try { recognition.start(); } catch (err) {}
+        }, 1200);
+      }
+    };
+
+    recognition.onresult = async (event) => {
+      const texto = event.results[0][0].transcript.trim();
+      if (!texto) return;
+
+      statusEl.textContent = 'Vos: ' + texto;
+      const respuesta = await preguntarGroq(texto);
+      statusEl.textContent = 'Kit: ' + respuesta;
+      hablar(respuesta);
+    };
+
+    recognition.onend = () => {
+      if (!isSpeaking) {
+        try {
+          setTimeout(() => recognition.start(), 250);
+        } catch (err) {
+          console.warn('No se pudo reiniciar el reconocimiento:', err);
+        }
+      }
+    };
+  }
+
+  async function preguntarGroq(texto) {
+    statusEl.textContent = 'Pensando...';
+
     try {
-      setTimeout(() => recognition.start(), 250);
-    } catch (err) {
-      console.warn('No se pudo reiniciar el reconocimiento:', err);
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + GROQ_API_KEY
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: 'Sos ' + assistantName + ', un asistente útil, corto y amable, con tono andrógino y estilo rioplatense. Responde en español, con frases naturales, precisas y cálidas. Máximo 2 frases por respuesta.'
+            },
+            { role: 'user', content: texto }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        console.error(data);
+        return 'No pude responder ahora mismo.';
+      }
+
+      return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+        ? data.choices[0].message.content.trim()
+        : 'No pude responder ahora mismo.';
+    } catch (error) {
+      console.error('Error Groq:', error);
+      return 'No pude procesar la respuesta.';
     }
   }
-};
 
-// ---------- LLAMADA A GROQ ----------
-async function preguntarGroq(texto) {
-  statusEl.textContent = "Pensando...";
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + GROQ_API_KEY
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages: [
-          { role: "system", content: "Sos Kit, un asistente conciso y directo, de tono neutro y andrógino. Respondé corto, en español rioplatense." },
-          { role: "user", content: texto }
-        ]
-      })
+  function chooseSpanishVoice() {
+    if (!('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = ['es-AR', 'es-ES', 'es'];
+
+    for (const lang of preferred) {
+      const match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(lang.toLowerCase()));
+      if (match) return match;
+    }
+
+    return voices.find(v => /es/i.test(v.lang)) || voices[0] || null;
+  }
+
+  function showWords(text) {
+    subtitlesEl.innerHTML = '';
+    const words = text.split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+
+    const approxMs = Math.max(440, Math.min(900, 2600 / words.length));
+    words.forEach((word, index) => {
+      setTimeout(() => {
+        const span = document.createElement('span');
+        span.className = 'word';
+        span.textContent = word;
+        subtitlesEl.appendChild(span);
+
+        setTimeout(() => {
+          span.classList.add('fading');
+          setTimeout(() => span.remove(), 900);
+        }, 1800);
+      }, index * approxMs);
     });
-    const data = await response.json();
-    if (!response.ok) {
-      console.error(data);
-      return "Error API: " + (data.error?.message || response.status);
-    }
-    return data.choices[0].message.content;
-  } catch (err) {
-    console.error(err);
-    return "Error JS: " + err.message;
   }
-}
 
-// ---------- SÍNTESIS DE VOZ (Piper TTS local, audio real) ----------
-const subtitlesEl = document.getElementById('subtitles');
-let audioCtx = null;
-let analyser = null;
-let piperTts = null; // se carga una sola vez, se reusa siempre
-
-function agregarSubtitulo(palabra) {
-  const span = document.createElement('span');
-  span.className = 'word';
-  span.textContent = palabra;
-  subtitlesEl.appendChild(span);
-
-  setTimeout(() => {
-    span.classList.add('fading');
-    setTimeout(() => span.remove(), 1000);
-  }, 2500);
-}
-
-async function getPiperTts() {
-  if (piperTts) return piperTts;
-  statusEl.textContent = "Descargando voz (solo la primera vez)...";
-  piperTts = await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web/+esm');
-  return piperTts;
-}
-
-function elegirVozPiper(disponibles) {
-  const claves = Object.keys(disponibles || {});
-  if (!claves.length) return null;
-  if (disponibles[PIPER_VOICE_ID]) return PIPER_VOICE_ID;
-  const vozEs = claves.find((v) => v.toLowerCase().startsWith('es'));
-  return vozEs || claves[0];
-}
-
-async function hablar(texto) {
-  subtitlesEl.innerHTML = "";
-  isSpeaking = true;
-  try {
-    const tts = await getPiperTts();
-    const disponibles = await tts.voices();
-    const vozElegida = elegirVozPiper(disponibles);
-
-    if (!vozElegida) {
-      statusEl.textContent = "No hay voces disponibles para Piper.";
+  function hablar(texto) {
+    if (!texto || !('speechSynthesis' in window)) {
       isSpeaking = false;
-      setTimeout(() => recognition.start(), 3000);
+      statusEl.textContent = 'La voz del sistema no está disponible en este navegador.';
       return;
     }
 
-    if (vozElegida !== PIPER_VOICE_ID) {
-      statusEl.textContent = "Usando voz alternativa en español: " + vozElegida;
-    }
+    isSpeaking = true;
+    window.speechSynthesis.cancel();
+    subtitlesEl.innerHTML = '';
 
-    statusEl.textContent = "Generando voz...";
-    const wavBlob = await tts.predict({ text: texto, voiceId: vozElegida });
-    reproducirConAnalisis(URL.createObjectURL(wavBlob), texto);
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = "Error TTS: " + err.message;
-    isSpeaking = false;
-    setTimeout(() => recognition.start(), 4000);
+    const utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'es-AR';
+    utterance.rate = 1;
+    utterance.pitch = 1.15;
+    utterance.volume = 1;
+
+    const voice = chooseSpanishVoice();
+    if (voice) utterance.voice = voice;
+
+    utterance.onstart = () => {
+      statusEl.textContent = 'Kit hablando...';
+      showWords(texto);
+    };
+
+    utterance.onboundary = () => {
+      triggerPulse(0.9);
+    };
+
+    utterance.onend = () => {
+      isSpeaking = false;
+      voiceIntensity = 0;
+      statusEl.textContent = 'Escuchando...';
+      setTimeout(() => {
+        if (recognition) {
+          try { recognition.start(); } catch (err) {}
+        }
+      }, 500);
+    };
+
+    utterance.onerror = () => {
+      isSpeaking = false;
+      statusEl.textContent = 'Error de voz del sistema.';
+    };
+
+    window.speechSynthesis.speak(utterance);
   }
-}
 
-function reproducirConAnalisis(audioUrl, texto) {
-  const audio = new Audio(audioUrl);
-
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 256;
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length) {
+        statusEl.textContent = 'Listo para hablar.';
+      }
+    };
   }
 
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-
-  const source = audioCtx.createMediaElementSource(audio);
-  source.connect(analyser);
-  analyser.connect(audioCtx.destination);
-
-  const data = new Uint8Array(analyser.frequencyBinCount);
-
-  function actualizarVolumen() {
-    analyser.getByteFrequencyData(data);
-    const promedio = data.reduce((a, b) => a + b, 0) / data.length;
-    volume = promedio / 255;
-    if (!audio.paused && !audio.ended) requestAnimationFrame(actualizarVolumen);
-  }
-
-  const palabras = texto.split(/\s+/).filter(Boolean);
-  audio.onloadedmetadata = () => {
-    if (!palabras.length) return;
-    const porPalabra = audio.duration / palabras.length;
-    palabras.forEach((p, i) => setTimeout(() => agregarSubtitulo(p), i * porPalabra * 1000));
-  };
-
-  audio.onplay = () => {
-    statusEl.textContent = "Kit hablando...";
-    actualizarVolumen();
-  };
-  audio.onended = () => {
-    isSpeaking = false;
-    volume = 0;
-    setTimeout(() => {
+  startBtn.addEventListener('click', () => {
+    startBtn.style.display = 'none';
+    if (recognition) {
       try {
         recognition.start();
       } catch (err) {
-        console.warn('No se pudo reactivar el reconocimiento:', err);
+        console.warn('El reconocimiento ya está activo:', err);
       }
-    }, 500);
-  };
-  audio.play();
-}
-
-// ---------- BOTÓN DE INICIO ----------
-document.getElementById('startBtn').addEventListener('click', () => {
-  document.getElementById('startBtn').style.display = "none";
-  try {
-    recognition.start();
-  } catch (err) {
-    console.warn('El reconocimiento ya estaba activo:', err);
-  }
-});
+    } else {
+      statusEl.textContent = 'Este navegador no soporta reconocimiento de voz.';
+    }
+  });
 </script>
 </body>
 </html>
