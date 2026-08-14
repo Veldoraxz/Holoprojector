@@ -5,7 +5,6 @@
 <title>Kit</title>
 <style>
   :root {
-    --bg: #000000;
     --line: rgba(255, 160, 180, 0.42);
     --pink: #ff8da1;
     --pink-soft: rgba(255, 141, 161, 0.8);
@@ -30,13 +29,6 @@
     align-items: center;
     justify-content: center;
     background: #000;
-  }
-
-  .hud {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: rgba(0, 0, 0, 0);
   }
 
   canvas {
@@ -130,6 +122,11 @@
   const subtitlesEl = document.getElementById('subtitles');
   const startBtn = document.getElementById('startBtn');
 
+  const RESTART_DELAY_MS = 250;
+  const SPEECH_PULSE_INTERVAL_MS = 170;
+  const WORD_DELAY_MS = 380;
+  const WORD_FADE_DELAY_MS = 650;
+
   let isSpeaking = false;
   let voiceIntensity = 0;
   let speechPulseTimer = null;
@@ -192,7 +189,7 @@
       if (!isSpeaking) return;
       const intensity = 0.2 + Math.random() * 0.35;
       triggerPulse(intensity);
-    }, 170);
+    }, SPEECH_PULSE_INTERVAL_MS);
   }
 
   function stopSpeechPulseLoop() {
@@ -218,8 +215,8 @@
 
     recognition.onerror = (event) => {
       console.error('SpeechRecognition error:', event.error);
-      statusEl.textContent = 'No pude escuchar. Reintentando...';
       if (!isSpeaking) {
+        statusEl.textContent = 'No pude escuchar. Reintentando...';
         setTimeout(() => {
           try { recognition.start(); } catch (err) {}
         }, 1200);
@@ -239,7 +236,7 @@
     recognition.onend = () => {
       if (!isSpeaking) {
         try {
-          setTimeout(() => recognition.start(), 250);
+          setTimeout(() => recognition.start(), RESTART_DELAY_MS);
         } catch (err) {
           console.warn('No se pudo reiniciar el reconocimiento:', err);
         }
@@ -302,8 +299,9 @@
     const words = text.split(/\s+/).filter(Boolean);
     if (!words.length) return;
 
-    const approxMs = Math.max(440, Math.min(900, 2600 / words.length));
     words.forEach((word, index) => {
+      const delay = index * WORD_DELAY_MS + 160;
+
       setTimeout(() => {
         const span = document.createElement('span');
         span.className = 'word';
@@ -312,9 +310,9 @@
 
         setTimeout(() => {
           span.classList.add('fading');
-          setTimeout(() => span.remove(), 900);
-        }, 1800);
-      }, index * approxMs);
+          setTimeout(() => span.remove(), 700);
+        }, Math.max(WORD_FADE_DELAY_MS, WORD_DELAY_MS * 1.6));
+      }, delay);
     });
   }
 
