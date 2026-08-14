@@ -23,6 +23,27 @@
     max-width: 500px;
     max-height: 500px;
   }
+  #subtitles {
+    position: absolute;
+    bottom: 130px;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 30px;
+    box-sizing: border-box;
+  }
+  .word {
+    color: rgba(255,255,255,0.85);
+    font-family: sans-serif;
+    font-size: 16px;
+    opacity: 1;
+    transition: opacity 1s ease;
+  }
+  .word.fading {
+    opacity: 0;
+  }
   #status {
     position: absolute;
     bottom: 90px;
@@ -55,11 +76,12 @@
 
 <button id="startBtn">Iniciar Jarvis</button>
 <canvas id="orb" width="600" height="600"></canvas>
+<div id="subtitles"></div>
 <div id="status">Esperando...</div>
 
 <script>
 // ---------- CONFIG ----------
-const GROQ_API_KEY = "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"; // pegá tu key de console.groq.com
+const GROQ_API_KEY = "TU_API_KEY_ACA"; // pegá tu key de console.groq.com
 const GROQ_MODEL = "openai/gpt-oss-120b";
 
 // ---------- ORBE ANIMADO ----------
@@ -93,7 +115,7 @@ function drawOrb() {
   ctx.stroke();
 
   t++;
-  volume *= 0.9; // decae solo si no hay nueva voz
+  volume *= 0.93; // decae más suave, pulso menos abrupto
   requestAnimationFrame(drawOrb);
 }
 drawOrb();
@@ -153,14 +175,48 @@ async function preguntarGroq(texto) {
 }
 
 // ---------- SÍNTESIS DE VOZ ----------
+const subtitlesEl = document.getElementById('subtitles');
+let vozElegida = null;
+
+function cargarVoz() {
+  const voces = speechSynthesis.getVoices();
+  const esVoces = voces.filter(v => v.lang.toLowerCase().startsWith('es'));
+  vozElegida = esVoces.find(v => /male|hombre|masculin/i.test(v.name)) || esVoces[0] || null;
+}
+speechSynthesis.onvoiceschanged = cargarVoz;
+cargarVoz();
+
+function agregarSubtitulo(palabra) {
+  const span = document.createElement('span');
+  span.className = 'word';
+  span.textContent = palabra;
+  subtitlesEl.appendChild(span);
+
+  setTimeout(() => {
+    span.classList.add('fading');
+    setTimeout(() => span.remove(), 1000);
+  }, 2500);
+}
+
 function hablar(texto) {
   const utter = new SpeechSynthesisUtterance(texto);
   utter.lang = "es-AR";
+  if (vozElegida) utter.voice = vozElegida;
+  utter.pitch = 1.25; // suaviza el tono, más afeminado sin dejar de ser masculino
+  utter.rate = 0.95;  // levemente más pausado, más natural
+  subtitlesEl.innerHTML = "";
 
   // pulso real: sube en cada palabra nueva, decae solo (por el *0.9 del draw loop)
   utter.onboundary = (event) => {
     if (event.name === "word") {
-      volume = 0.8;
+      const resto = texto.slice(event.charIndex);
+      const match = resto.match(/^\S+/);
+      if (match) {
+        agregarSubtitulo(match[0]);
+        // pulso proporcional al largo de la palabra, con variación natural
+        const intensidad = Math.min(0.4 + match[0].length * 0.035, 1);
+        volume = intensidad * (0.85 + Math.random() * 0.3);
+      }
     }
   };
 
