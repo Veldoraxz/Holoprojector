@@ -178,7 +178,7 @@ async function preguntarGroq(texto) {
 const subtitlesEl = document.getElementById('subtitles');
 let audioCtx = null;
 let analyser = null;
-let piperSession = null; // se crea una sola vez, se reusa siempre
+let piperTts = null; // se carga una sola vez, se reusa siempre
 
 function agregarSubtitulo(palabra) {
   const span = document.createElement('span');
@@ -192,21 +192,20 @@ function agregarSubtitulo(palabra) {
   }, 2500);
 }
 
-async function getPiperSession() {
-  if (piperSession) return piperSession;
+async function getPiperTts() {
+  if (piperTts) return piperTts;
   statusEl.textContent = "Descargando voz (solo la primera vez)...";
-  const { TtsSession } = await import('https://cdn.jsdelivr.net/npm/@realtimex/piper-tts-web/+esm');
-  piperSession = await TtsSession.create({ voiceId: PIPER_VOICE_ID });
-  return piperSession;
+  piperTts = await import('https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web/+esm');
+  return piperTts;
 }
 
 async function hablar(texto) {
   subtitlesEl.innerHTML = "";
   try {
-    const session = await getPiperSession();
+    const tts = await getPiperTts();
     statusEl.textContent = "Generando voz...";
-    const audioBlob = await session.predict(texto);
-    reproducirConAnalisis(URL.createObjectURL(audioBlob), texto);
+    const wavBlob = await tts.predict({ text: texto, voiceId: PIPER_VOICE_ID });
+    reproducirConAnalisis(URL.createObjectURL(wavBlob), texto);
   } catch (err) {
     console.error(err);
     statusEl.textContent = "Error TTS: " + err.message;
