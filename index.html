@@ -105,13 +105,14 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
     box-shadow: 0 0 18px rgba(255, 141, 161, 0.12);
   }
 
   #startBtn:hover {
     transform: translateX(-50%) scale(1.02);
     box-shadow: 0 0 22px rgba(255, 141, 161, 0.2);
+    color: #ffd9e2;
   }
 </style>
 </head>
@@ -561,10 +562,31 @@
   function setResponseMode(mode) {
     responseMode = mode;
     const isCompact = mode === 'compact';
-    startBtn.textContent = isCompact ? 'Modo breve' : 'Modo detallado';
     startBtn.setAttribute('data-mode', mode);
-    setStatus(isCompact ? 'Modo breve activo.' : 'Modo detallado activo.');
+
+    if (isSpeaking) {
+      startBtn.textContent = 'Cortar';
+      return;
+    }
+
+    const baseLabel = 'Iniciar';
+    const modeLabel = isCompact ? 'breve' : 'extendido';
+    startBtn.textContent = baseLabel + ' · ' + modeLabel;
   }
+
+  startBtn.addEventListener('mouseenter', () => {
+    if (!isSpeaking) {
+      const nextMode = responseMode === 'compact' ? 'detailed' : 'compact';
+      startBtn.textContent = nextMode === 'compact' ? 'Cambiar a breve' : 'Cambiar a extendido';
+    }
+  });
+
+  startBtn.addEventListener('mouseleave', () => {
+    if (!isSpeaking) {
+      const modeLabel = responseMode === 'compact' ? 'breve' : 'extendido';
+      startBtn.textContent = 'Iniciar · ' + modeLabel;
+    }
+  });
 
   startBtn.addEventListener('click', () => {
     if (isSpeaking) {
@@ -572,13 +594,10 @@
       return;
     }
 
-    if (startBtn.getAttribute('data-mode') === 'detailed') {
-      responseMode = 'detailed';
-    } else {
-      responseMode = 'compact';
-    }
-
-    startBtn.style.display = 'none';
+    const nextMode = responseMode === 'compact' ? 'detailed' : 'compact';
+    responseMode = nextMode;
+    setResponseMode(nextMode);
+    setStatus(nextMode === 'compact' ? 'Modo breve activo.' : 'Modo extendido activo.');
     startListening();
   });
 
@@ -586,11 +605,6 @@
     if (isSpeaking) {
       playInterruptResponse();
     }
-  });
-
-  startBtn.addEventListener('dblclick', () => {
-    const nextMode = responseMode === 'compact' ? 'detailed' : 'compact';
-    setResponseMode(nextMode);
   });
 
   setResponseMode('compact');
