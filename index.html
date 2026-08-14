@@ -5,10 +5,10 @@
 <title>Kit</title>
 <style>
   :root {
-    --bg: #05070d;
-    --line: rgba(255, 160, 180, 0.36);
+    --bg: #000000;
+    --line: rgba(255, 160, 180, 0.42);
     --pink: #ff8da1;
-    --pink-soft: rgba(255, 141, 161, 0.75);
+    --pink-soft: rgba(255, 141, 161, 0.8);
     --text: rgba(255,255,255,0.9);
   }
 
@@ -18,9 +18,7 @@
     margin: 0;
     width: 100%;
     height: 100%;
-    background:
-      radial-gradient(circle at center, rgba(255, 130, 160, 0.14), transparent 30%),
-      linear-gradient(180deg, #03060b 0%, #080b15 100%);
+    background: #000;
     overflow: hidden;
     color: var(--text);
     font-family: Arial, Helvetica, sans-serif;
@@ -31,21 +29,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #000;
   }
 
   .hud {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0));
+    background: rgba(0, 0, 0, 0);
   }
 
   canvas {
     display: block;
-    width: min(82vmin, 520px);
-    height: min(82vmin, 520px);
-    filter: drop-shadow(0 0 22px rgba(255, 130, 160, 0.3));
+    width: min(80vmin, 500px);
+    height: min(80vmin, 500px);
+    filter: drop-shadow(0 0 24px rgba(255, 130, 160, 0.35));
     opacity: 0.98;
+    background: transparent;
   }
 
   #subtitles {
@@ -132,6 +132,7 @@
 
   let isSpeaking = false;
   let voiceIntensity = 0;
+  let speechPulseTimer = null;
 
   const canvas = document.getElementById('orb');
   const ctx = canvas.getContext('2d');
@@ -181,7 +182,25 @@
   drawOrb();
 
   function triggerPulse(intensity) {
-    voiceIntensity = Math.max(voiceIntensity, intensity);
+    voiceIntensity = Math.max(voiceIntensity, Math.min(1, intensity));
+  }
+
+  function startSpeechPulseLoop() {
+    if (speechPulseTimer) clearInterval(speechPulseTimer);
+
+    speechPulseTimer = setInterval(() => {
+      if (!isSpeaking) return;
+      const intensity = 0.45 + Math.random() * 0.55;
+      triggerPulse(intensity);
+    }, 140);
+  }
+
+  function stopSpeechPulseLoop() {
+    if (speechPulseTimer) {
+      clearInterval(speechPulseTimer);
+      speechPulseTimer = null;
+    }
+    voiceIntensity = 0;
   }
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -320,8 +339,10 @@
     if (voice) utterance.voice = voice;
 
     utterance.onstart = () => {
+      isSpeaking = true;
       statusEl.textContent = 'Kit hablando...';
       showWords(texto);
+      startSpeechPulseLoop();
     };
 
     utterance.onboundary = () => {
@@ -330,7 +351,7 @@
 
     utterance.onend = () => {
       isSpeaking = false;
-      voiceIntensity = 0;
+      stopSpeechPulseLoop();
       statusEl.textContent = 'Escuchando...';
       setTimeout(() => {
         if (recognition) {
