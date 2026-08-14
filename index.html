@@ -96,7 +96,9 @@
     left: 50%;
     bottom: 28px;
     transform: translateX(-50%);
-    padding: 12px 28px;
+    min-width: 190px;
+    width: fit-content;
+    padding: 12px 22px;
     border-radius: 999px;
     border: 1px solid var(--line);
     background: rgba(255,255,255,0.02);
@@ -107,6 +109,7 @@
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
     box-shadow: 0 0 18px rgba(255, 141, 161, 0.12);
+    white-space: nowrap;
   }
 
   #startBtn:hover {
@@ -569,9 +572,12 @@
       return;
     }
 
-    const baseLabel = 'Iniciar';
-    const modeLabel = isCompact ? 'breve' : 'extendido';
-    startBtn.textContent = baseLabel + ' · ' + modeLabel;
+    if (isListening || isProcessing) {
+      startBtn.textContent = isCompact ? 'Modo breve' : 'Modo extendido';
+      return;
+    }
+
+    startBtn.textContent = isCompact ? 'Modo breve' : 'Modo extendido';
   }
 
   startBtn.addEventListener('mouseenter', () => {
@@ -584,13 +590,17 @@
   startBtn.addEventListener('mouseleave', () => {
     if (!isSpeaking) {
       const modeLabel = responseMode === 'compact' ? 'breve' : 'extendido';
-      startBtn.textContent = 'Iniciar · ' + modeLabel;
+      startBtn.textContent = 'Modo ' + modeLabel;
     }
   });
 
   startBtn.addEventListener('click', () => {
     if (isSpeaking) {
       playInterruptResponse();
+      return;
+    }
+
+    if (isListening || isProcessing) {
       return;
     }
 
@@ -607,7 +617,7 @@
     }
   });
 
-  setResponseMode('compact');
+  startBtn.textContent = 'Iniciar';
 </script>
 </body>
 </html>
