@@ -84,6 +84,7 @@
 const GROQ_API_KEY = "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";
 const GROQ_MODEL = "openai/gpt-oss-120b";
 const PIPER_VOICE_ID = "es_AR-daniela-high";
+let isSpeaking = false;
 
 // ---------- ORBE ANIMADO ----------
 const canvas = document.getElementById('orb');
@@ -141,7 +142,13 @@ recognition.onresult = async (event) => {
 };
 
 recognition.onend = () => {
-  // el reinicio ahora lo dispara el audio de Jarvis al terminar de hablar (ver reproducirConAnalisis)
+  if (!isSpeaking) {
+    try {
+      setTimeout(() => recognition.start(), 250);
+    } catch (err) {
+      console.warn('No se pudo reiniciar el reconocimiento:', err);
+    }
+  }
 };
 
 // ---------- LLAMADA A GROQ ----------
@@ -199,23 +206,40 @@ async function getPiperTts() {
   return piperTts;
 }
 
+function elegirVozPiper(disponibles) {
+  const claves = Object.keys(disponibles || {});
+  if (!claves.length) return null;
+  if (disponibles[PIPER_VOICE_ID]) return PIPER_VOICE_ID;
+  const vozEs = claves.find((v) => v.toLowerCase().startsWith('es'));
+  return vozEs || claves[0];
+}
+
 async function hablar(texto) {
   subtitlesEl.innerHTML = "";
+  isSpeaking = true;
   try {
     const tts = await getPiperTts();
     const disponibles = await tts.voices();
-    if (!disponibles[PIPER_VOICE_ID]) {
-      const esVoces = Object.keys(disponibles).filter(v => v.startsWith('es_')).join(', ');
-      statusEl.textContent = "Voces ES disponibles: " + (esVoces || "ninguna");
-      setTimeout(() => recognition.start(), 8000);
+    const vozElegida = elegirVozPiper(disponibles);
+
+    if (!vozElegida) {
+      statusEl.textContent = "No hay voces disponibles para Piper.";
+      isSpeaking = false;
+      setTimeout(() => recognition.start(), 3000);
       return;
     }
+
+    if (vozElegida !== PIPER_VOICE_ID) {
+      statusEl.textContent = "Usando voz alternativa en español: " + vozElegida;
+    }
+
     statusEl.textContent = "Generando voz...";
-    const wavBlob = await tts.predict({ text: texto, voiceId: PIPER_VOICE_ID });
+    const wavBlob = await tts.predict({ text: texto, voiceId: vozElegida });
     reproducirConAnalisis(URL.createObjectURL(wavBlob), texto);
   } catch (err) {
     console.error(err);
     statusEl.textContent = "Error TTS: " + err.message;
+    isSpeaking = false;
     setTimeout(() => recognition.start(), 4000);
   }
 }
@@ -228,6 +252,11 @@ function reproducirConAnalisis(audioUrl, texto) {
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
   }
+
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
   const source = audioCtx.createMediaElementSource(audio);
   source.connect(analyser);
   analyser.connect(audioCtx.destination);
@@ -237,13 +266,13 @@ function reproducirConAnalisis(audioUrl, texto) {
   function actualizarVolumen() {
     analyser.getByteFrequencyData(data);
     const promedio = data.reduce((a, b) => a + b, 0) / data.length;
-    volume = promedio / 255; // volumen real, 0 a 1
+    volume = promedio / 255;
     if (!audio.paused && !audio.ended) requestAnimationFrame(actualizarVolumen);
   }
 
-  // subtítulos: reparto aproximado de las palabras en la duración total del audio
-  const palabras = texto.split(/\s+/);
+  const palabras = texto.split(/\s+/).filter(Boolean);
   audio.onloadedmetadata = () => {
+    if (!palabras.length) return;
     const porPalabra = audio.duration / palabras.length;
     palabras.forEach((p, i) => setTimeout(() => agregarSubtitulo(p), i * porPalabra * 1000));
   };
@@ -253,8 +282,15 @@ function reproducirConAnalisis(audioUrl, texto) {
     actualizarVolumen();
   };
   audio.onended = () => {
+    isSpeaking = false;
     volume = 0;
-    setTimeout(() => recognition.start(), 500);
+    setTimeout(() => {
+      try {
+        recognition.start();
+      } catch (err) {
+        console.warn('No se pudo reactivar el reconocimiento:', err);
+      }
+    }, 500);
   };
   audio.play();
 }
@@ -262,7 +298,11 @@ function reproducirConAnalisis(audioUrl, texto) {
 // ---------- BOTÓN DE INICIO ----------
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('startBtn').style.display = "none";
-  recognition.start();
+  try {
+    recognition.start();
+  } catch (err) {
+    console.warn('El reconocimiento ya estaba activo:', err);
+  }
 });
 </script>
 </body>
