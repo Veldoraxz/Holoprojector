@@ -115,18 +115,25 @@
 <div id="status">Esperando...</div>
 
 <script>
+  // ---------- CONFIG ----------
   const GROQ_API_KEY = "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";
   const GROQ_MODEL = "openai/gpt-oss-120b";
   const assistantName = "Kit";
-  const statusEl = document.getElementById('status');
-  const subtitlesEl = document.getElementById('subtitles');
-  const startBtn = document.getElementById('startBtn');
 
   const RESTART_DELAY_MS = 250;
   const SPEECH_PULSE_INTERVAL_MS = 170;
   const WORD_DELAY_MS = 380;
   const WORD_FADE_DELAY_MS = 650;
 
+  const statusEl = document.getElementById('status');
+  const subtitlesEl = document.getElementById('subtitles');
+  const startBtn = document.getElementById('startBtn');
+
+  function setStatus(message) {
+    statusEl.textContent = message;
+  }
+
+  // ---------- ORBE ----------
   let isSpeaking = false;
   let voiceIntensity = 0;
   let speechPulseTimer = null;
@@ -210,13 +217,13 @@
     recognition.interimResults = false;
 
     recognition.onstart = () => {
-      statusEl.textContent = 'Escuchando...';
+      setStatus('Escuchando...');
     };
 
     recognition.onerror = (event) => {
       console.error('SpeechRecognition error:', event.error);
       if (!isSpeaking) {
-        statusEl.textContent = 'No pude escuchar. Reintentando...';
+        setStatus('No pude escuchar. Reintentando...');
         setTimeout(() => {
           try { recognition.start(); } catch (err) {}
         }, 1200);
@@ -227,9 +234,9 @@
       const texto = event.results[0][0].transcript.trim();
       if (!texto) return;
 
-      statusEl.textContent = 'Vos: ' + texto;
+      setStatus('Vos: ' + texto);
       const respuesta = await preguntarGroq(texto);
-      statusEl.textContent = 'Kit: ' + respuesta;
+      setStatus('Kit: ' + respuesta);
       hablar(respuesta);
     };
 
@@ -244,8 +251,9 @@
     };
   }
 
+  // ---------- IA / GROQ ----------
   async function preguntarGroq(texto) {
-    statusEl.textContent = 'Pensando...';
+    setStatus('Pensando...');
 
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -281,6 +289,7 @@
     }
   }
 
+  // ---------- VOZ DEL SISTEMA ----------
   function chooseSpanishVoice() {
     if (!('speechSynthesis' in window)) return null;
     const voices = window.speechSynthesis.getVoices();
@@ -319,7 +328,7 @@
   function hablar(texto) {
     if (!texto || !('speechSynthesis' in window)) {
       isSpeaking = false;
-      statusEl.textContent = 'La voz del sistema no está disponible en este navegador.';
+      setStatus('La voz del sistema no está disponible en este navegador.');
       return;
     }
 
@@ -338,7 +347,7 @@
 
     utterance.onstart = () => {
       isSpeaking = true;
-      statusEl.textContent = 'Kit hablando...';
+      setStatus('Kit hablando...');
       showWords(texto);
       startSpeechPulseLoop();
     };
@@ -350,7 +359,7 @@
     utterance.onend = () => {
       isSpeaking = false;
       stopSpeechPulseLoop();
-      statusEl.textContent = 'Escuchando...';
+      setStatus('Escuchando...');
       setTimeout(() => {
         if (recognition) {
           try { recognition.start(); } catch (err) {}
@@ -360,7 +369,7 @@
 
     utterance.onerror = () => {
       isSpeaking = false;
-      statusEl.textContent = 'Error de voz del sistema.';
+      setStatus('Error de voz del sistema.');
     };
 
     window.speechSynthesis.speak(utterance);
@@ -370,22 +379,27 @@
     window.speechSynthesis.onvoiceschanged = () => {
       const voices = window.speechSynthesis.getVoices();
       if (voices.length) {
-        statusEl.textContent = 'Listo para hablar.';
+        setStatus('Listo para hablar.');
       }
     };
   }
 
-  startBtn.addEventListener('click', () => {
-    startBtn.style.display = 'none';
+  function startListening() {
     if (recognition) {
       try {
         recognition.start();
       } catch (err) {
         console.warn('El reconocimiento ya está activo:', err);
       }
-    } else {
-      statusEl.textContent = 'Este navegador no soporta reconocimiento de voz.';
+      return;
     }
+
+    setStatus('Este navegador no soporta reconocimiento de voz.');
+  }
+
+  startBtn.addEventListener('click', () => {
+    startBtn.style.display = 'none';
+    startListening();
   });
 </script>
 </body>
