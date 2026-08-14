@@ -234,7 +234,6 @@
       const texto = event.results[0][0].transcript.trim();
       if (!texto) return;
 
-      setStatus('Vos: ' + texto);
       const respuesta = await preguntarGroq(texto);
       setStatus('Kit: ' + respuesta);
       hablar(respuesta);
