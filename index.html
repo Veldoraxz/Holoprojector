@@ -135,6 +135,8 @@
 
   // ---------- ORBE ----------
   let isSpeaking = false;
+  let isProcessing = false;
+  let isListening = false;
   let voiceIntensity = 0;
   let speechPulseTimer = null;
 
@@ -217,12 +219,13 @@
     recognition.interimResults = false;
 
     recognition.onstart = () => {
+      isListening = true;
       setStatus('Escuchando...');
     };
 
     recognition.onerror = (event) => {
       console.error('SpeechRecognition error:', event.error);
-      if (!isSpeaking) {
+      if (!isSpeaking && !isProcessing) {
         setStatus('No pude escuchar. Reintentando...');
         setTimeout(() => {
           try { recognition.start(); } catch (err) {}
@@ -234,13 +237,17 @@
       const texto = event.results[0][0].transcript.trim();
       if (!texto) return;
 
+      isListening = false;
+      isProcessing = true;
       const respuesta = await preguntarGroq(texto);
+      isProcessing = false;
       setStatus('Kit: ' + respuesta);
       hablar(respuesta);
     };
 
     recognition.onend = () => {
-      if (!isSpeaking) {
+      isListening = false;
+      if (!isSpeaking && !isProcessing) {
         try {
           setTimeout(() => recognition.start(), RESTART_DELAY_MS);
         } catch (err) {
@@ -251,6 +258,21 @@
   }
 
   // ---------- IA / GROQ ----------
+  function formatAssistantReply(text) {
+    if (!text) return '¿Qué querés que haga?';
+
+    const clean = text
+      .replace(/\s+/g, ' ')
+      .replace(/\b(soy|sos)\b/gi, 'soy')
+      .trim();
+
+    const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
+    if (!sentences.length) return '¿Qué querés que haga?';
+
+    const selected = sentences.slice(0, 2).join(' ');
+    return selected.length > 220 ? selected.slice(0, 217).trim() + '...' : selected;
+  }
+
   async function preguntarGroq(texto) {
     setStatus('Pensando...');
 
@@ -266,7 +288,7 @@
           messages: [
             {
               role: 'system',
-              content: 'Sos ' + assistantName + ', un asistente útil, corto y amable, con tono andrógino y estilo rioplatense. Responde en español, con frases naturales, precisas y cálidas. Máximo 2 frases por respuesta.'
+              content: 'Sos ' + assistantName + ', un asistente útil y natural, con tono amable y andrógino. Habla en español rioplatense, con frases cortas, claras y humanas. No hables como un bot. Responde con 1 o 2 frases, sin listas ni frases demasiado largas. Si la pregunta es simple, responde simple. Si es compleja, responde directo y útil.'
             },
             { role: 'user', content: texto }
           ]
@@ -279,9 +301,11 @@
         return 'No pude responder ahora mismo.';
       }
 
-      return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+      const raw = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
         ? data.choices[0].message.content.trim()
         : 'No pude responder ahora mismo.';
+
+      return formatAssistantReply(raw);
     } catch (error) {
       console.error('Error Groq:', error);
       return 'No pude procesar la respuesta.';
@@ -360,7 +384,7 @@
       stopSpeechPulseLoop();
       setStatus('Escuchando...');
       setTimeout(() => {
-        if (recognition) {
+        if (recognition && !isProcessing) {
           try { recognition.start(); } catch (err) {}
         }
       }, 500);
@@ -384,6 +408,8 @@
   }
 
   function startListening() {
+    if (isSpeaking || isProcessing || isListening) return;
+
     if (recognition) {
       try {
         recognition.start();
