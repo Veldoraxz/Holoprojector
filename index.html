@@ -116,9 +116,8 @@
 
 <script>
   // ---------- CONFIG ----------
-  const GROQ_API_KEY = "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";
-  const GROQ_MODEL = "openai/gpt-oss-120b";
-  const assistantName = "Kit";
+  const BACKEND_URL = '';
+  const assistantName = 'Kit';
 
   const RESTART_DELAY_MS = 250;
   const SPEECH_PULSE_INTERVAL_MS = 170;
@@ -277,37 +276,24 @@
     setStatus('Pensando...');
 
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + GROQ_API_KEY
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model: GROQ_MODEL,
-          messages: [
-            {
-              role: 'system',
-              content: 'Sos ' + assistantName + ', un asistente útil y natural, con tono amable y andrógino. Habla en español rioplatense, con frases cortas, claras y humanas. No hables como un bot. Responde con 1 o 2 frases, sin listas ni frases demasiado largas. Si la pregunta es simple, responde simple. Si es compleja, responde directo y útil.'
-            },
-            { role: 'user', content: texto }
-          ]
-        })
+        body: JSON.stringify({ text: texto })
       });
 
       const data = await response.json();
       if (!response.ok) {
         console.error(data);
-        return 'No pude responder ahora mismo.';
+        return data?.error || 'No pude responder ahora mismo.';
       }
 
-      const raw = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
-        ? data.choices[0].message.content.trim()
-        : 'No pude responder ahora mismo.';
-
+      const raw = data?.text || 'No pude responder ahora mismo.';
       return formatAssistantReply(raw);
     } catch (error) {
-      console.error('Error Groq:', error);
+      console.error('Error backend:', error);
       return 'No pude procesar la respuesta.';
     }
   }
