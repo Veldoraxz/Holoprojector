@@ -203,6 +203,13 @@ async function hablar(texto) {
   subtitlesEl.innerHTML = "";
   try {
     const tts = await getPiperTts();
+    const disponibles = await tts.voices();
+    if (!disponibles[PIPER_VOICE_ID]) {
+      const esVoces = Object.keys(disponibles).filter(v => v.startsWith('es_')).join(', ');
+      statusEl.textContent = "Voces ES disponibles: " + (esVoces || "ninguna");
+      setTimeout(() => recognition.start(), 8000);
+      return;
+    }
     statusEl.textContent = "Generando voz...";
     const wavBlob = await tts.predict({ text: texto, voiceId: PIPER_VOICE_ID });
     reproducirConAnalisis(URL.createObjectURL(wavBlob), texto);
