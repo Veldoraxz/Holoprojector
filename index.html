@@ -124,6 +124,8 @@
   const WORD_DELAY_MS = 380;
   const WORD_FADE_DELAY_MS = 650;
 
+  let conversationHistory = [];
+
   const statusEl = document.getElementById('status');
   const subtitlesEl = document.getElementById('subtitles');
   const startBtn = document.getElementById('startBtn');
@@ -236,6 +238,7 @@
       const texto = event.results[0][0].transcript.trim();
       if (!texto) return;
 
+      conversationHistory.push({ role: 'user', content: texto });
       isListening = false;
       isProcessing = true;
       const respuesta = await preguntarGroq(texto);
@@ -265,11 +268,7 @@
       .replace(/\b(soy|sos)\b/gi, 'soy')
       .trim();
 
-    const sentences = clean.split(/(?<=[.!?])\s+/).filter(Boolean);
-    if (!sentences.length) return '¿Qué querés que haga?';
-
-    const selected = sentences.slice(0, 2).join(' ');
-    return selected.length > 220 ? selected.slice(0, 217).trim() + '...' : selected;
+    return clean;
   }
 
   async function preguntarGroq(texto) {
@@ -281,7 +280,10 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ text: texto })
+        body: JSON.stringify({ 
+          history: conversationHistory,
+          text: texto 
+        })
       });
 
       const data = await response.json();
@@ -291,6 +293,7 @@
       }
 
       const raw = data?.text || 'No pude responder ahora mismo.';
+      conversationHistory.push({ role: 'assistant', content: raw });
       return formatAssistantReply(raw);
     } catch (error) {
       console.error('Error backend:', error);

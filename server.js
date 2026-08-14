@@ -16,6 +16,7 @@ app.get('/health', (_req, res) => {
 app.post('/api/chat', async (req, res) => {
   try {
     const text = String(req.body?.text || '').trim();
+    const history = Array.isArray(req.body?.history) ? req.body.history : [];
 
     if (!text) {
       return res.status(400).json({ error: 'Falta el texto a procesar.' });
@@ -28,6 +29,15 @@ app.post('/api/chat', async (req, res) => {
 
     const model = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
+    const messages = [
+      {
+        role: 'system',
+        content: 'Sos Kit. Hablás en español rioplatense con un tono andrógino, natural y casual, pero manteniendo una postura seria y resolutiva. Actuá como una persona real: evitá las frases de inteligencia artificial estereotipadas, los saludos robóticos o la excesiva cortesía. Tus respuestas deben ser directas, claras y sin dar vueltas. Muy ocasionalmente, podés incluir una pincelada de humor sarcastico, seco, sutil, cínico o estoico, al estilo de los cómics de Batman. Responde en la extensión que sea necesaria, pero si el usuario te dice que seas más corto o que cortes, acortá al toque.'
+      },
+      ...history.map(msg => ({ role: msg.role, content: msg.content })),
+      { role: 'user', content: text }
+    ];
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -36,13 +46,7 @@ app.post('/api/chat', async (req, res) => {
       },
       body: JSON.stringify({
         model,
-        messages: [
-          {
-            role: 'system',
-            content: 'Sos Kit. Hablás en español rioplatense con un tono andrógino, natural y casual, pero manteniendo una postura seria y resolutiva. Actuá como una persona real: evitá las frases de inteligencia artificial estereotipadas, los saludos robóticos o la excesiva cortesía. Tus respuestas deben ser directas, claras y sin dar vueltas. Muy ocasionalmente, podés incluir una pincelada de humor sarcastico, seco, sutil, cínico o estoico, al estilo de los cómics de Batman. Sé cortante pero efectivo: máximo 2 frases por respuesta.'
-          },
-          { role: 'user', content: text }
-        ]
+        messages
       })
     });
 
