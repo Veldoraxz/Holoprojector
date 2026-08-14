@@ -141,10 +141,14 @@ async function preguntarGroq(texto) {
       })
     });
     const data = await response.json();
+    if (!response.ok) {
+      console.error(data);
+      return "Error API: " + (data.error?.message || response.status);
+    }
     return data.choices[0].message.content;
   } catch (err) {
     console.error(err);
-    return "Tuve un problema para responder.";
+    return "Error JS: " + err.message;
   }
 }
 
