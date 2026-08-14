@@ -11,43 +11,56 @@
     height: 100%;
     overflow: hidden;
   }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   canvas {
     display: block;
-    margin: 0 auto;
+    width: 90vmin;
+    height: 90vmin;
+    max-width: 500px;
+    max-height: 500px;
   }
   #status {
     position: absolute;
-    bottom: 20px;
+    bottom: 90px;
     width: 100%;
     text-align: center;
-    color: #0af;
+    color: #ff8da1;
     font-family: sans-serif;
-    font-size: 14px;
+    font-size: 13px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    opacity: 0.7;
   }
   #startBtn {
     position: absolute;
-    top: 20px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 10px 20px;
-    background: #0af;
-    border: none;
-    border-radius: 6px;
-    color: #000;
-    font-weight: bold;
+    padding: 12px 28px;
+    background: transparent;
+    border: 1px solid rgba(255,141,161,0.35);
+    border-radius: 30px;
+    color: rgba(255,141,161,0.75);
+    font-family: sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
   }
 </style>
 </head>
 <body>
 
 <button id="startBtn">Iniciar Jarvis</button>
-<canvas id="orb" width="400" height="400"></canvas>
+<canvas id="orb" width="600" height="600"></canvas>
 <div id="status">Esperando...</div>
 
 <script>
 // ---------- CONFIG ----------
 const GROQ_API_KEY = "TU_API_KEY_ACA"; // pegá tu key de console.groq.com
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_MODEL = "openai/gpt-oss-120b";
 
 // ---------- ORBE ANIMADO ----------
 const canvas = document.getElementById('orb');
@@ -59,13 +72,13 @@ function drawOrb() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
-  const baseRadius = 80;
+  const baseRadius = 130;
   const pulse = baseRadius + Math.sin(t * 0.1) * 5 + volume * 40;
 
   const gradient = ctx.createRadialGradient(cx, cy, 10, cx, cy, pulse);
-  gradient.addColorStop(0, "rgba(0,200,255,0.9)");
-  gradient.addColorStop(0.5, "rgba(0,120,255,0.4)");
-  gradient.addColorStop(1, "rgba(0,50,150,0)");
+  gradient.addColorStop(0, "rgba(255,160,180,0.9)");
+  gradient.addColorStop(0.5, "rgba(255,120,150,0.4)");
+  gradient.addColorStop(1, "rgba(255,90,130,0)");
 
   ctx.beginPath();
   ctx.fillStyle = gradient;
@@ -74,7 +87,7 @@ function drawOrb() {
 
   // anillo
   ctx.beginPath();
-  ctx.strokeStyle = "rgba(0,220,255,0.6)";
+  ctx.strokeStyle = "rgba(255,141,161,0.6)";
   ctx.lineWidth = 2;
   ctx.arc(cx, cy, baseRadius + 20 + volume * 20, 0, Math.PI * 2);
   ctx.stroke();
@@ -140,13 +153,14 @@ function hablar(texto) {
   const utter = new SpeechSynthesisUtterance(texto);
   utter.lang = "es-AR";
 
-  // simula el "volumen" del orbe mientras habla
-  const interval = setInterval(() => {
-    volume = Math.random() * 0.8;
-  }, 100);
+  // pulso real: sube en cada palabra nueva, decae solo (por el *0.9 del draw loop)
+  utter.onboundary = (event) => {
+    if (event.name === "word") {
+      volume = 0.8;
+    }
+  };
 
   utter.onend = () => {
-    clearInterval(interval);
     volume = 0;
   };
 
