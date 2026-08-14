@@ -243,7 +243,6 @@
       isProcessing = true;
       const respuesta = await preguntarGroq(texto);
       isProcessing = false;
-      setStatus('Kit: ' + respuesta);
       hablar(respuesta);
     };
 
@@ -260,6 +259,27 @@
   }
 
   // ---------- IA / GROQ ----------
+  function convertSymbolsToWords(text) {
+    return text
+      .replace(/\*/g, 'asterisco')
+      .replace(/_/g, 'guion bajo')
+      .replace(/`/g, 'backtick')
+      .replace(/~/g, 'tilde')
+      .replace(/\|/g, 'barra')
+      .replace(/\#/g, 'numeral')
+      .replace(/\$/g, 'peso')
+      .replace(/%/g, 'porcentaje')
+      .replace(/&/g, 'ampersand')
+      .replace(/\^/g, 'circunflejo')
+      .replace(/\[/g, 'corchete abierto')
+      .replace(/\]/g, 'corchete cerrado')
+      .replace(/\{/g, 'llave abierta')
+      .replace(/\}/g, 'llave cerrada')
+      .replace(/</g, 'menor que')
+      .replace(/>/g, 'mayor que')
+      .replace(/\//g, 'barra');
+  }
+
   function formatAssistantReply(text) {
     if (!text) return '¿Qué querés que haga?';
 
@@ -348,7 +368,8 @@
     window.speechSynthesis.cancel();
     subtitlesEl.innerHTML = '';
 
-    const utterance = new SpeechSynthesisUtterance(texto);
+    const textoParaLeer = convertSymbolsToWords(texto);
+    const utterance = new SpeechSynthesisUtterance(textoParaLeer);
     utterance.lang = 'es-AR';
     utterance.rate = 1;
     utterance.pitch = 1.15;
@@ -359,9 +380,12 @@
 
     utterance.onstart = () => {
       isSpeaking = true;
-      setStatus('Kit hablando...');
+      setStatus('Kit: ' + texto);
       showWords(texto);
       startSpeechPulseLoop();
+      startBtn.style.display = 'block';
+      startBtn.textContent = 'Cortar';
+    };
     };
 
     utterance.onboundary = () => {
@@ -372,6 +396,8 @@
       isSpeaking = false;
       stopSpeechPulseLoop();
       setStatus('Escuchando...');
+      startBtn.textContent = 'Iniciar Kit';
+      startBtn.style.display = 'none';
       setTimeout(() => {
         if (recognition && !isProcessing) {
           try { recognition.start(); } catch (err) {}
@@ -412,8 +438,36 @@
   }
 
   startBtn.addEventListener('click', () => {
-    startBtn.style.display = 'none';
-    startListening();
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      isSpeaking = false;
+      stopSpeechPulseLoop();
+      subtitlesEl.innerHTML = '';
+      setStatus('Escuchando...');
+      startBtn.textContent = 'Iniciar Kit';
+      startBtn.style.display = 'none';
+      if (recognition && !isProcessing) {
+        try { recognition.start(); } catch (err) {}
+      }
+    } else {
+      startBtn.style.display = 'none';
+      startListening();
+    }
+  });
+
+  canvas.addEventListener('click', () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      isSpeaking = false;
+      stopSpeechPulseLoop();
+      subtitlesEl.innerHTML = '';
+      setStatus('Escuchando...');
+      startBtn.textContent = 'Iniciar Kit';
+      startBtn.style.display = 'none';
+      if (recognition && !isProcessing) {
+        try { recognition.start(); } catch (err) {}
+      }
+    }
   });
 </script>
 </body>
