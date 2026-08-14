@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Jarvis</title>
+<title>Kit</title>
 <style>
   html, body {
     margin: 0;
@@ -74,7 +74,7 @@
 </head>
 <body>
 
-<button id="startBtn">Iniciar Jarvis</button>
+<button id="startBtn">Iniciar asistente</button>
 <canvas id="orb" width="600" height="600"></canvas>
 <div id="subtitles"></div>
 <div id="status">Esperando...</div>
@@ -84,7 +84,7 @@
 const GROQ_API_KEY = "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";
 const GROQ_MODEL = "openai/gpt-oss-120b";
 const ELEVEN_API_KEY = "sk_e740eb9df4f7fdb8fbd5ffe8e36987a006d899d844d47477";
-const ELEVEN_VOICE_ID = "AwmgI32PB22lsT7wnBFH";
+const ELEVEN_VOICE_ID = "MF3mGyEYCl7XYWbV9V6O";
 
 // ---------- ORBE ANIMADO ----------
 const canvas = document.getElementById('orb');
@@ -137,12 +137,12 @@ recognition.onresult = async (event) => {
   const texto = event.results[0][0].transcript;
   statusEl.textContent = "Vos: " + texto;
   const respuesta = await preguntarGroq(texto);
-  statusEl.textContent = "Jarvis: " + respuesta;
+  statusEl.textContent = "Kit: " + respuesta;
   hablar(respuesta);
 };
 
 recognition.onend = () => {
-  // el reinicio ahora lo dispara el audio de Jarvis al terminar de hablar (ver reproducirConAnalisis)
+  // el reinicio ahora lo dispara el audio de Kit al terminar de hablar (ver reproducirConAnalisis)
 };
 
 // ---------- LLAMADA A GROQ ----------
@@ -158,7 +158,7 @@ async function preguntarGroq(texto) {
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages: [
-          { role: "system", content: "Sos Jarvis, un asistente conciso y directo. Respondé corto, en español rioplatense." },
+          { role: "system", content: "Sos Kit, un asistente androgino, conciso y directo. Respondé corto, en español rioplatense." },
           { role: "user", content: texto }
         ]
       })
@@ -251,7 +251,7 @@ function reproducirConAnalisis(audioUrl, texto) {
   };
 
   audio.onplay = () => {
-    statusEl.textContent = "Jarvis hablando...";
+    statusEl.textContent = "Kit hablando...";
     actualizarVolumen();
   };
   audio.onended = () => {
