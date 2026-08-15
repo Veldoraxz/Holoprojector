@@ -67,8 +67,20 @@
     line-height: 1.4;
     opacity: 1;
     transition: opacity 0.9s ease, transform 0.9s ease;
-    transform: translateY(0);
+    transform: scale(0.95) translateY(2px);
     text-shadow: 0 0 12px rgba(255,255,255,0.2);
+    animation: wordEntry 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes wordEntry {
+    from {
+      opacity: 0;
+      transform: scale(0.85) translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 
   .word.fading {
@@ -89,6 +101,23 @@
     opacity: 0.8;
     text-shadow: 0 0 12px rgba(255, 141, 161, 0.3);
     pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  #status.fade-in {
+    animation: statusFadeIn 0.4s ease-out forwards;
+  }
+
+  @keyframes statusFadeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(4px);
+    }
+    to {
+      opacity: 0.8;
+      transform: translateX(-50%) translateY(0);
+    }
   }
 
   #startBtn {
@@ -116,6 +145,26 @@
     transform: translateX(-50%) scale(1.02);
     box-shadow: 0 0 22px rgba(255, 141, 161, 0.2);
     color: #ffd9e2;
+  }
+
+  #startBtn.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  canvas.ripple {
+    animation: rippleEffect 0.6s ease-out;
+  }
+
+  @keyframes rippleEffect {
+    0% {
+      box-shadow: 0 0 2px rgba(255, 130, 160, 0.8), inset 0 0 20px rgba(255, 130, 160, 0.3);
+      filter: drop-shadow(0 0 24px rgba(255, 130, 160, 0.35)) brightness(1.2);
+    }
+    100% {
+      box-shadow: 0 0 60px rgba(255, 130, 160, 0.1), inset 0 0 2px rgba(255, 130, 160, 0.1);
+      filter: drop-shadow(0 0 24px rgba(255, 130, 160, 0.35)) brightness(1);
+    }
   }
 </style>
 </head>
@@ -171,7 +220,53 @@
   let subtitleTimers = [];
 
   function setStatus(message) {
+    statusEl.classList.remove('fade-in');
+    void statusEl.offsetWidth; // Trigger reflow for animation restart
     statusEl.textContent = message;
+    statusEl.classList.add('fade-in');
+  }
+
+  function playSound(type) {
+    try {
+      const audioContext = window.audioContext || (window.audioContext = new (window.AudioContext || window.webkitAudioContext)());
+      const now = audioContext.currentTime;
+      
+      if (type === 'activate') {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(650, now + 0.15);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.02, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'deactivate') {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.setValueAtTime(380, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.12);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } else if (type === 'bip') {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.setValueAtTime(880, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+    } catch (err) {
+      console.warn('Audio not available:', err);
+    }
   }
 
   function persistSession() {
@@ -193,6 +288,8 @@
   let isListening = false;
   let voiceIntensity = 0;
   let speechPulseTimer = null;
+  let wordPulseTime = 0;
+  let parallaxRotation = 0;
 
   const canvas = document.getElementById('orb');
   const ctx = canvas.getContext('2d');
@@ -207,6 +304,20 @@
     const baseRadius = isMobile ? 148 : 118;
     const pulse = baseRadius + Math.sin(t * 0.09) * 6 + voiceIntensity * 28;
 
+    // ===== LAYER 1: OUTER GLOW RINGS (Parallax) =====
+    parallaxRotation += 0.0015;
+    for (let ring = 0; ring < 3; ring++) {
+      const ringRadius = pulse + 70 + ring * 20;
+      const alpha = (0.3 - ring * 0.09) * (1 - Math.abs(Math.sin(t * 0.02 + ring)));
+      
+      ctx.beginPath();
+      ctx.strokeStyle = `rgba(255, 130, 160, ${alpha})`;
+      ctx.lineWidth = 1.5 - ring * 0.3;
+      ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // ===== LAYER 2: CONCENTRATED GLOW SPHERE =====
     const glow = ctx.createRadialGradient(cx, cy, 12, cx, cy, pulse + 70);
     glow.addColorStop(0, 'rgba(255, 210, 220, 0.82)');
     glow.addColorStop(0.22, 'rgba(255, 170, 190, 0.5)');
@@ -218,10 +329,13 @@
     ctx.arc(cx, cy, pulse + 58, 0, Math.PI * 2);
     ctx.fill();
 
+    // ===== LAYER 3: CORE HOLOGRAM (Multi-stop) =====
     const core = ctx.createRadialGradient(cx, cy, 10, cx, cy, pulse);
-    core.addColorStop(0, 'rgba(255,245,248,0.85)');
-    core.addColorStop(0.2, 'rgba(255,188,204,0.75)');
+    core.addColorStop(0, 'rgba(255,250,252,0.92)');
+    core.addColorStop(0.15, 'rgba(255,210,220,0.85)');
+    core.addColorStop(0.35, 'rgba(255,188,204,0.75)');
     core.addColorStop(0.55, 'rgba(255,140,170,0.42)');
+    core.addColorStop(0.8, 'rgba(255,115,150,0.15)');
     core.addColorStop(1, 'rgba(255,115,150,0)');
 
     ctx.beginPath();
@@ -229,10 +343,31 @@
     ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
     ctx.fill();
 
+    // ===== LAYER 4: DYNAMIC REFLECTION (Moves with voice) =====
+    const reflectX = cx + Math.cos(t * 0.01) * 12;
+    const reflectY = cy - 30 + voiceIntensity * 15;
+    const reflect = ctx.createRadialGradient(reflectX, reflectY, 2, reflectX, reflectY, pulse * 0.4);
+    reflect.addColorStop(0, 'rgba(255,255,255,0.15)');
+    reflect.addColorStop(0.5, 'rgba(255,240,245,0.05)');
+    reflect.addColorStop(1, 'rgba(255,240,245,0)');
+
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255, 150, 180, 0.6)';
-    ctx.lineWidth = 2;
+    ctx.fillStyle = reflect;
+    ctx.arc(cx, cy, pulse * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ===== LAYER 5: PULSING RING (Voice-reactive) =====
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(255, 150, 180, ${0.6 + voiceIntensity * 0.3})`;
+    ctx.lineWidth = 2 + voiceIntensity * 1.5;
     ctx.arc(cx, cy, baseRadius + 14 + voiceIntensity * 12, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // ===== LAYER 6: INNER ACCENT CIRCLE =====
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(255, 200, 215, ${0.3 + Math.sin(t * 0.05) * 0.2})`;
+    ctx.lineWidth = 1;
+    ctx.arc(cx, cy, pulse * 0.65, 0, Math.PI * 2);
     ctx.stroke();
 
     t += 1;
@@ -450,6 +585,7 @@
         return;
       }
       isSpeaking = true;
+      playSound('bip');
       setStatus('Hablando...');
       showWords(texto);
       startSpeechPulseLoop();
@@ -494,6 +630,7 @@
   function startListening() {
     if (isSpeaking || isProcessing || isListening) return;
 
+    playSound('activate');
     if (recognition) {
       try {
         recognition.start();
@@ -516,6 +653,13 @@
     const triggerFlash = () => {
       voiceIntensity = 0.8;
       canvas.style.transform = 'scale(1.05)';
+      canvas.classList.add('ripple');
+      playSound('deactivate');
+      
+      setTimeout(() => {
+        canvas.classList.remove('ripple');
+      }, 600);
+      
       setTimeout(() => {
         voiceIntensity = 0;
         canvas.style.transform = 'scale(1)';
@@ -543,6 +687,7 @@
       setStatus('Kit: ' + response.text);
       showWords(response.text);
       startSpeechPulseLoop();
+      playSound('bip');
     };
     
     utterance.onend = () => {
