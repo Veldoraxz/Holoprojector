@@ -302,6 +302,16 @@
     box-shadow: 0 0 12px rgba(var(--pink-rgb), 0.1);
   }
 
+  /* Cuando el botón "Nueva conversación" está visible, subir status y
+     subtítulos para que no se solapen con él (es un hermano anterior en el DOM). */
+  #newConvBtn.show ~ #status {
+    bottom: 118px;
+  }
+
+  #newConvBtn.show ~ #subtitles {
+    bottom: 158px;
+  }
+
   /* ---------- Overlay de historial ---------- */
   #historyOverlay {
     position: absolute;
@@ -555,6 +565,11 @@
   const historyBodyEl = document.getElementById('historyBody');
   const presetBtns = Array.from(document.querySelectorAll('.preset'));
   let subtitleTimers = [];
+
+  function clearSubtitleTimers() {
+    subtitleTimers.forEach(timer => clearTimeout(timer));
+    subtitleTimers = [];
+  }
 
   function setBtnLabel(text) {
     const label = startBtn.querySelector('.btn-label');
