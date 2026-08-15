@@ -151,21 +151,6 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
-
-  canvas.ripple {
-    animation: rippleEffect 0.6s ease-out;
-  }
-
-  @keyframes rippleEffect {
-    0% {
-      box-shadow: 0 0 2px rgba(255, 130, 160, 0.8), inset 0 0 20px rgba(255, 130, 160, 0.3);
-      filter: drop-shadow(0 0 24px rgba(255, 130, 160, 0.35)) brightness(1.2);
-    }
-    100% {
-      box-shadow: 0 0 60px rgba(255, 130, 160, 0.1), inset 0 0 2px rgba(255, 130, 160, 0.1);
-      filter: drop-shadow(0 0 24px rgba(255, 130, 160, 0.35)) brightness(1);
-    }
-  }
 </style>
 </head>
 <body>
@@ -290,6 +275,9 @@
   let speechPulseTimer = null;
   let wordPulseTime = 0;
   let parallaxRotation = 0;
+  let rippleActive = false;
+  let rippleTime = 0;
+  let rippleMaxRadius = 200;
 
   const canvas = document.getElementById('orb');
   const ctx = canvas.getContext('2d');
@@ -369,6 +357,35 @@
     ctx.lineWidth = 1;
     ctx.arc(cx, cy, pulse * 0.65, 0, Math.PI * 2);
     ctx.stroke();
+
+    // ===== LAYER 7: RIPPLE EFFECT (Interrupt/Cut) =====
+    if (rippleActive) {
+      const rippleProgress = rippleTime / 0.6; // 600ms total
+      if (rippleProgress < 1) {
+        const currentRippleRadius = rippleProgress * rippleMaxRadius;
+        const rippleAlpha = (1 - rippleProgress) * 0.7;
+        
+        // Outer expanding ring
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 130, 160, ${rippleAlpha})`;
+        ctx.lineWidth = 3 - rippleProgress * 2;
+        ctx.arc(cx, cy, currentRippleRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner wave (lag effect)
+        const laggedRadius = Math.max(0, currentRippleRadius - 40);
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(255, 180, 200, ${rippleAlpha * 0.6})`;
+        ctx.lineWidth = 1.5;
+        ctx.arc(cx, cy, laggedRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        rippleTime += 1 / 60; // ~60fps
+      } else {
+        rippleActive = false;
+        rippleTime = 0;
+      }
+    }
 
     t += 1;
     voiceIntensity *= 0.88;
@@ -652,17 +669,12 @@
     
     const triggerFlash = () => {
       voiceIntensity = 0.8;
-      canvas.style.transform = 'scale(1.05)';
-      canvas.classList.add('ripple');
+      rippleActive = true;
+      rippleTime = 0;
       playSound('deactivate');
       
       setTimeout(() => {
-        canvas.classList.remove('ripple');
-      }, 600);
-      
-      setTimeout(() => {
         voiceIntensity = 0;
-        canvas.style.transform = 'scale(1)';
       }, 180);
     };
     
