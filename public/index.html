@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kit</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="topLeftBar">
+  <button class="ctrl icon-btn hidden" id="newConvBtn" title="Nueva conversación">+</button>
+</div>
+
+<div id="topBar">
+  <button class="ctrl" id="viewModeBtn" title="Modo de visualización">Proyección</button>
+  <button class="ctrl hidden" id="paletteBtn" title="Paleta de color">Rosa</button>
+  <button class="ctrl hidden" id="themeBtn" title="Tema claro/oscuro">Oscuro</button>
+  <button class="ctrl" id="historyBtn" title="Ver historial completo">Historial</button>
+</div>
+
+<div id="metaRow">
+  <span id="msgCount">Mensajes: 0</span>
+  <span id="qualityPct">Calidad: —</span>
+</div>
+<div id="qualityBar"><div id="qualityFill"></div></div>
+
+<button id="startBtn"><span class="btn-label">Iniciar</span></button>
+<canvas id="orb" width="600" height="600"></canvas>
+<div id="subtitles"></div>
+<div id="status">Esperando...</div>
+
+<div id="historyOverlay">
+  <div id="historyBox">
+    <div id="historyHeader">
+      <span>Historial</span>
+      <button id="historyClose">✕</button>
+    </div>
+    <div id="historyBody"></div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
