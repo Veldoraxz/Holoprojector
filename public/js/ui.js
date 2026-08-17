@@ -1,5 +1,6 @@
 import { state } from './app.js';
-import { writeSession, SESSION_VIEW_KEY, SESSION_PALETTE_KEY, SESSION_THEME_KEY } from './storage.js';
+import { writeSession } from './storage.js';
+import { SESSION_VIEW_KEY, SESSION_PALETTE_KEY, SESSION_THEME_KEY } from './config.js';
 import { playSound } from './sounds.js';
 
 //UI

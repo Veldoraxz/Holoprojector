@@ -4,7 +4,8 @@ import { subtitlesEl, subtitleTimers, clearSubtitleTimers, setStatus, setBtnLabe
 import { triggerPulse } from './orb.js';
 import { playSound } from './sounds.js';
 import { convertSymbolsToWords, preguntarGroq, detectTone } from './api.js';
-import { persistSession, updateMeta } from './storage.js';
+import { persistSession } from './storage.js';
+import { updateMeta } from './history.js';
 
 //RECONOCIMIENTO DE VOZ
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;

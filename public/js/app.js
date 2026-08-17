@@ -1,6 +1,6 @@
-import { loadPersistentState, updateMeta, clearConversation } from './storage.js';
-import { applyThemeUI, setResponseMode, startBtn, viewModeBtn, paletteBtn, themeBtn, historyBtn, historyCloseBtn, historyOverlayEl, newConvBtn, setHoverState, toggleViewMode, togglePalette, toggleTheme } from './ui.js';
-import { showHistory } from './history.js';
+import { loadPersistentState, clearConversation } from './storage.js';
+import { applyThemeUI, setResponseMode, startBtn, viewModeBtn, paletteBtn, themeBtn, historyBtn, historyCloseBtn, newConvBtn, setHoverState, toggleViewMode, togglePalette, toggleTheme } from './ui.js';
+import { showHistory, updateMeta, historyOverlayEl } from './history.js';
 import { initOrb, canvas } from './orb.js';
 import { initSpeechRecognition, preloadVoices, startListening, playInterruptResponse } from './speech.js';
 import { playSound } from './sounds.js';
