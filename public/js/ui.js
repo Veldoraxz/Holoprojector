@@ -16,8 +16,6 @@ export const historyCloseBtn = document.getElementById('historyClose');
 
 export let subtitleTimers = [];
 
-export let subtitleTimers = [];
-
 // Frena y borra los temporizadores que controlan la aparición de subtítulos
 export function clearSubtitleTimers() {
   subtitleTimers.forEach(timer => clearTimeout(timer));
