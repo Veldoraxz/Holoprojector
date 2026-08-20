@@ -41,7 +41,8 @@ function drawOrb() {
   const tone = state.orbColorOverride || (isThinking ? 'thinking' : state.currentTone);
   const orbColors = getOrbColor(tone, state.paletteMode);
 
-  for (let ring = 0; ring < 3; ring++) {
+  const ringCount = isMobile ? 1 : 3;
+  for (let ring = 0; ring < ringCount; ring++) {
     const speed = 1 + ring * 0.45;
     const angle = state.parallaxRotation * speed + ring * 2.2;
     const orbitRadius = pulse + 70 + ring * 20;
@@ -56,24 +57,26 @@ function drawOrb() {
     ctx.stroke();
   }
 
-  ctx.beginPath();
-  ctx.strokeStyle = `rgba(${colorRgb(orbColors.ring)}, 0.14)`;
-  ctx.lineWidth = 1;
-  ctx.arc(cx, cy, pulse + 88, 0, Math.PI * 2);
-  ctx.stroke();
+  if (!isMobile) {
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(${colorRgb(orbColors.ring)}, 0.14)`;
+    ctx.lineWidth = 1;
+    ctx.arc(cx, cy, pulse + 88, 0, Math.PI * 2);
+    ctx.stroke();
 
-  const glowCx = cx + Math.cos(state.parallaxRotation * 0.7) * 7;
-  const glowCy = cy + Math.sin(state.parallaxRotation * 0.7) * 7;
-  const glow = ctx.createRadialGradient(glowCx, glowCy, 12, cx, cy, pulse + 70);
-  glow.addColorStop(0, orbColors.glow[0]);
-  glow.addColorStop(0.22, orbColors.glow[1]);
-  glow.addColorStop(0.52, orbColors.glow[2]);
-  glow.addColorStop(1, orbColors.glow[2].replace(/0\.\d+/, '0'));
+    const glowCx = cx + Math.cos(state.parallaxRotation * 0.7) * 7;
+    const glowCy = cy + Math.sin(state.parallaxRotation * 0.7) * 7;
+    const glow = ctx.createRadialGradient(glowCx, glowCy, 12, cx, cy, pulse + 70);
+    glow.addColorStop(0, orbColors.glow[0]);
+    glow.addColorStop(0.22, orbColors.glow[1]);
+    glow.addColorStop(0.52, orbColors.glow[2]);
+    glow.addColorStop(1, orbColors.glow[2].replace(/0\.\d+/, '0'));
 
-  ctx.beginPath();
-  ctx.fillStyle = glow;
-  ctx.arc(cx, cy, pulse + 58, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.beginPath();
+    ctx.fillStyle = glow;
+    ctx.arc(cx, cy, pulse + 58, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   const coreCx = cx + Math.cos(state.parallaxRotation * 0.4) * 4;
   const coreCy = cy + Math.sin(state.parallaxRotation * 0.4) * 4;
@@ -90,17 +93,19 @@ function drawOrb() {
   ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
   ctx.fill();
 
-  const reflectX = cx + Math.cos(t * 0.01 + state.parallaxRotation * 0.5) * 12;
-  const reflectY = cy - 30 + state.voiceIntensity * 15;
-  const reflect = ctx.createRadialGradient(reflectX, reflectY, 2, reflectX, reflectY, pulse * 0.4);
-  reflect.addColorStop(0, 'rgba(255,255,255,0.15)');
-  reflect.addColorStop(0.5, 'rgba(255,240,245,0.05)');
-  reflect.addColorStop(1, 'rgba(255,240,245,0)');
+  if (!isMobile) {
+    const reflectX = cx + Math.cos(t * 0.01 + state.parallaxRotation * 0.5) * 12;
+    const reflectY = cy - 30 + state.voiceIntensity * 15;
+    const reflect = ctx.createRadialGradient(reflectX, reflectY, 2, reflectX, reflectY, pulse * 0.4);
+    reflect.addColorStop(0, 'rgba(255,255,255,0.15)');
+    reflect.addColorStop(0.5, 'rgba(255,240,245,0.05)');
+    reflect.addColorStop(1, 'rgba(255,240,245,0)');
 
-  ctx.beginPath();
-  ctx.fillStyle = reflect;
-  ctx.arc(cx, cy, pulse * 0.5, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.beginPath();
+    ctx.fillStyle = reflect;
+    ctx.arc(cx, cy, pulse * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.beginPath();
   ctx.strokeStyle = `rgba(${colorRgb(orbColors.ring)}, ${0.6 + state.voiceIntensity * 0.3})`;
