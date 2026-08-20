@@ -1,5 +1,5 @@
 import { loadPersistentState, clearConversation } from './storage.js';
-import { applyThemeUI, setResponseMode, startBtn, viewModeBtn, paletteBtn, themeBtn, historyBtn, historyCloseBtn, newConvBtn, setHoverState, toggleViewMode, togglePalette, toggleTheme } from './ui.js';
+import { setResponseMode, startBtn, historyBtn, historyCloseBtn, newConvBtn, setHoverState } from './ui.js';
 import { showHistory, updateMeta, historyOverlayEl } from './history.js';
 import { initOrb, canvas } from './orb.js';
 import { initSpeechRecognition, preloadVoices, startListening, playInterruptResponse } from './speech.js';
@@ -14,10 +14,6 @@ export const state = {
   currentTone: 'neutral',
   orbColorOverride: null,
   sessionMsgCount: 0,
-  
-  viewMode: 'projection',
-  paletteMode: 'rosa',
-  themeMode: 'dark',
   
   isSpeaking: false,
   isProcessing: false,
@@ -37,7 +33,6 @@ function init() {
   preloadVoices();
   initOrb();
 
-  applyThemeUI();
   updateMeta();
 
   if (state.conversationHistory.length > 0) {
@@ -96,15 +91,13 @@ function setupEvents() {
   });
 
   newConvBtn.addEventListener('click', () => {
-    if (state.isSpeaking || state.isProcessing || state.isListening) return;
+    if (state.isSpeaking || state.isProcessing) return;
     playSound('click');
     clearConversation();
     newConvBtn.classList.add('hidden');
   });
 
-  viewModeBtn.addEventListener('click', toggleViewMode);
-  paletteBtn.addEventListener('click', togglePalette);
-  themeBtn.addEventListener('click', toggleTheme);
+
 
   historyBtn.addEventListener('click', () => {
     playSound('click');

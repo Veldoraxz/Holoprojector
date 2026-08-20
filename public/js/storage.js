@@ -1,4 +1,4 @@
-import { PERSISTENT_KEY, SESSION_MODE_KEY, SESSION_VIEW_KEY, SESSION_PALETTE_KEY, SESSION_THEME_KEY, SEVEN_DAYS_MS } from './config.js';
+import { PERSISTENT_KEY, SESSION_MODE_KEY, SEVEN_DAYS_MS } from './config.js';
 import { updateMeta } from './history.js';
 import { setStatus } from './ui.js';
 import { playSound } from './sounds.js';
@@ -65,9 +65,6 @@ export function loadPersistentState() {
   }
 
   state.sessionMsgCount = state.conversationHistory.filter(m => m.role === 'user').length; // Estimado
-  state.viewMode = readSession(SESSION_VIEW_KEY, 'projection');
-  state.paletteMode = readSession(SESSION_PALETTE_KEY, 'rosa');
-  state.themeMode = readSession(SESSION_THEME_KEY, 'dark');
 }
 
 export function clearConversation() {

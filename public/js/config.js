@@ -10,9 +10,6 @@ export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const PERSISTENT_KEY = 'holoprojector_conversation_history';
 export const SESSION_MODE_KEY = 'holoprojector_mode';
-export const SESSION_VIEW_KEY = 'holoprojector_view_mode';
-export const SESSION_PALETTE_KEY = 'holoprojector_palette';
-export const SESSION_THEME_KEY = 'holoprojector_theme';
 
 export const TONE_VOICE = {
   question:   { pitch: 1.25, rate: 1.0  },
