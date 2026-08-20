@@ -16,57 +16,44 @@ export function triggerPulse(intensity) {
   state.voiceIntensity = Math.max(state.voiceIntensity, Math.min(0.9, intensity));
 }
 
-// Cambia la imagen del avatar dependiendo del estado de ánimo (ej: si detecta enojo, carga 'angry.jpg')
-export function updateAvatarEmotion(tone) {
-  const toneMap = {
-    'question': 'thinking.jpg',
-    'thinking': 'thinking.jpg',
-    'confused': 'thinking.jpg',
-    
-    'negative': 'angry.jpg',
-    'sarcasm': 'angry.jpg',
-    
-    'affirmation': 'happy.jpg',
-    
-    'neutral': 'neutral.jpg'
-  };
-
-  const filename = toneMap[tone] || 'neutral.jpg';
-  
-  if (avatarImg) {
-    avatarImg.src = `assets/${filename}`;
-  }
-}
-
-// Es un bucle infinito (60 veces por segundo) que actualiza el tamaño, brillo y posición del avatar para darle vida
+// Cambia la imagen del avatar dinámicamente según el estado en el que se encuentre Kit
 function animateAvatar() {
   if (!avatarContainer) return;
-  
+
   const isThinking = state.isProcessing && !state.isSpeaking;
-  
+  const isAnswering = state.isSpeaking;
+
+  let currentImg = 'neutral.jpg';
+  if (isThinking) currentImg = 'thinking.jpg';
+  else if (isAnswering) currentImg = 'answering.jpg';
+
+  if (avatarImg && !avatarImg.src.endsWith(currentImg)) {
+    avatarImg.src = `assets/${currentImg}`;
+  }
+
   // Parallax / flotación suave constante
   const floatY = Math.sin(t * 0.03) * 6;
-  
+
   // Escalar y brillar según la intensidad de la voz (triggerPulse)
   const scale = 1 + (state.voiceIntensity * 0.12);
   const brightness = 1 + (state.voiceIntensity * 0.4);
-  
+
   // Aplicar transformación al contenedor entero
   avatarContainer.style.transform = `translateY(${floatY}px) scale(${scale})`;
-  
+
   // Efectos visuales de filtro
   if (isThinking) {
     // Cuando está procesando la respuesta (efecto tenue o pensativo)
-    avatarImg.style.filter = `brightness(0.7) blur(${Math.abs(Math.sin(t*0.05)) * 2}px)`;
+    avatarImg.style.filter = `brightness(0.7) blur(${Math.abs(Math.sin(t * 0.05)) * 2}px)`;
   } else {
     // Estado normal o hablando (iluminación dinámica por voz)
     const shadowAlpha = 0.2 + (state.voiceIntensity * 0.6);
     const shadowSpread = 10 + (state.voiceIntensity * 30);
     avatarImg.style.filter = `brightness(${brightness}) drop-shadow(0 0 ${shadowSpread}px rgba(255, 141, 161, ${shadowAlpha}))`;
   }
-  
+
   t += 1;
   state.voiceIntensity *= 0.85; // decae suavemente
-  
+
   requestAnimationFrame(animateAvatar);
 }

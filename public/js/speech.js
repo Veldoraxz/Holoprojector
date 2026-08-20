@@ -1,9 +1,9 @@
 import { state } from './app.js';
 import { RESTART_DELAY_MS, WORD_DELAY_MS, WORD_FADE_DELAY_MS, SPEECH_PULSE_INTERVAL_MS, TONE_VOICE } from './config.js';
 import { subtitlesEl, subtitleTimers, clearSubtitleTimers, setStatus, setBtnLabel, newConvBtn, setResponseMode } from './ui.js';
-import { triggerPulse, updateAvatarEmotion } from './avatar.js';
+import { triggerPulse } from './avatar.js';
 import { playSound } from './sounds.js';
-import { convertSymbolsToWords, preguntarGroq, detectTone } from './api.js';
+import { convertSymbolsToWords, preguntarGroq } from './api.js';
 import { persistSession } from './storage.js';
 import { updateMeta } from './history.js';
 
@@ -46,16 +46,25 @@ export function initSpeechRecognition() {
     state.isListening = false;
     state.isProcessing = true;
     
-    const respuesta = await preguntarGroq(texto, state.conversationHistory, state.responseMode);
+    const result = await preguntarGroq(texto, state.conversationHistory, state.responseMode);
     
     state.isProcessing = false;
     
+    let respuesta = '';
+    let emocion = 'neutral';
+    
+    if (typeof result === 'string') {
+      respuesta = result;
+    } else {
+      respuesta = result.text || 'No pude procesar la respuesta.';
+      emocion = result.emotion || 'neutral';
+    }
+
     state.conversationHistory.push({ role: 'assistant', content: respuesta, ts: Date.now() });
     persistSession();
     updateMeta();
 
-    state.currentTone = detectTone(respuesta);
-    updateAvatarEmotion(state.currentTone);
+    state.currentTone = emocion;
     
     hablar(respuesta);
   };
@@ -140,8 +149,8 @@ function showWords(text) {
   });
 }
 
-function getVoiceParams(text) {
-  const tone = detectTone(text) || 'neutral';
+function getVoiceParams() {
+  const tone = state.currentTone || 'neutral';
   const base = TONE_VOICE[tone] || TONE_VOICE.neutral;
   // Personalidad fija: seria
   const preset = { pitch: 0.95, rate: 0.95 };
@@ -169,7 +178,7 @@ export function hablar(texto) {
 
   const textoParaLeer = convertSymbolsToWords(texto);
   const utterance = new SpeechSynthesisUtterance(textoParaLeer);
-  const voiceParams = getVoiceParams(texto);
+  const voiceParams = getVoiceParams();
   utterance.lang = 'es-AR';
   utterance.rate = voiceParams.rate;
   utterance.pitch = voiceParams.pitch;
@@ -197,7 +206,6 @@ export function hablar(texto) {
     if (speechId !== state.currentSpeechId) return;
     state.isSpeaking = false;
     stopSpeechPulseLoop();
-    updateAvatarEmotion('neutral');
     setStatus('Escuchando...');
     setResponseMode(state.responseMode);
     if (state.conversationHistory.length > 0) {

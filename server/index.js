@@ -46,7 +46,7 @@ app.post('/api/chat', async (req, res) => {
 
     const result = await provider.chat(messages);
 
-    return res.json({ text: result.text });
+    return res.json({ text: result.text, emotion: result.emotion });
   } catch (error) {
     console.error('Server error:', error);
     return res.status(500).json({ error: error.message || 'Error interno del servidor.' });

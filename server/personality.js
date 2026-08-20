@@ -7,7 +7,16 @@ function getSystemPrompt(mode) {
     ? 'Podés extenderte cuando la pregunta lo requiera, pero seguí siendo útil y sin rodeos.'
     : 'SÉ MUY CONCISO: Máximo 1-2 frases cortas como regla por defecto. Muy ocasionalmente, podés incluir una pincelada de humor sarcástico, seco, sutil, cínico o estoico, al estilo de los cómics de Batman. IMPORTANTE: Solo si el usuario pide explícitamente más detalles, información o respuestas largas, entonces sí podés extenderte.';
 
-  return [BASE_PERSONALITY, modeLine].filter(Boolean).join(' ');
+  const jsonRule = `
+DEBES RESPONDER ÚNICA Y EXCLUSIVAMENTE CON UN OBJETO JSON VÁLIDO. NO incluyas formato Markdown ni explicaciones fuera del JSON.
+Formato requerido:
+{
+  "respuesta": "Tu respuesta en texto",
+  "emocion": "neutral"
+}
+Las opciones para "emocion" son EXCLUSIVAMENTE: question, affirmation, sarcasm, confused, negative, neutral.`;
+
+  return [BASE_PERSONALITY, modeLine, jsonRule].filter(Boolean).join(' ');
 }
 
 module.exports = {

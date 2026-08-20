@@ -31,7 +31,19 @@ async function chat(messages) {
     throw new Error('El modelo local no devolvió contenido.');
   }
 
-  return { text: reply };
+  let text = reply;
+  let emotion = 'neutral';
+  try {
+    // Intenta extraer el JSON en caso de que el modelo haya agregado bloques de código Markdown
+    const jsonStr = reply.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.respuesta) text = parsed.respuesta;
+    if (parsed.emocion) emotion = parsed.emocion;
+  } catch (err) {
+    console.warn('No se pudo parsear el JSON del modelo local:', reply);
+  }
+
+  return { text, emotion };
 }
 
 module.exports = { chat };
