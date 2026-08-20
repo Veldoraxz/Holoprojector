@@ -30,7 +30,7 @@ export function initSpeechRecognition() {
     if (!state.isSpeaking && !state.isProcessing) {
       setStatus('No pude escuchar. Reintentando...');
       setTimeout(() => {
-        try { recognition.start(); } catch (err) {}
+        try { recognition.start(); } catch (err) { }
       }, 1200);
     }
   };
@@ -45,14 +45,14 @@ export function initSpeechRecognition() {
     updateMeta();
     state.isListening = false;
     state.isProcessing = true;
-    
+
     const result = await preguntarGroq(texto, state.conversationHistory, state.responseMode);
-    
+
     state.isProcessing = false;
-    
+
     let respuesta = '';
     let emocion = 'neutral';
-    
+
     if (typeof result === 'string') {
       respuesta = result;
     } else {
@@ -65,7 +65,7 @@ export function initSpeechRecognition() {
     updateMeta();
 
     state.currentTone = emocion;
-    
+
     hablar(respuesta);
   };
 
@@ -213,7 +213,7 @@ export function hablar(texto) {
     }
     setTimeout(() => {
       if (recognition && !state.isProcessing) {
-        try { recognition.start(); } catch (err) {}
+        try { recognition.start(); } catch (err) { }
       }
     }, 500);
   };
@@ -266,12 +266,11 @@ function stopSpeechPulseLoop() {
 export function playInterruptResponse() {
   const interruptResponses = [
     { text: '¿eh?', tone: 'confused' },
-    { text: 'Dale, me callé.', tone: 'compliant' },
+    { text: 'Dale, me callo.', tone: 'compliant' },
     { text: 'Bueno, bueno...', tone: 'compliant' },
     { text: 'Me cortaste en lo mejor.', tone: 'sarcastic' },
-    { text: 'Ñeeee...', tone: 'confused' },
-    { text: 'Ok, ok, me silenciás.', tone: 'compliant' },
-    { text: 'Ay, espera que iba para mejor esto.', tone: 'sarcastic' }
+    { text: 'Huh...', tone: 'confused' },
+    { text: 'Así sos.', tone: 'compliant' },
   ];
 
   clearSubtitleTimers();
@@ -320,7 +319,7 @@ export function playInterruptResponse() {
     setResponseMode(state.responseMode);
     setTimeout(() => {
       if (recognition && !state.isProcessing) {
-        try { recognition.start(); } catch (err) {}
+        try { recognition.start(); } catch (err) { }
       }
     }, 500);
   };

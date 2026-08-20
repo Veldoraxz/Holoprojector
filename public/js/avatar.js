@@ -24,8 +24,21 @@ function animateAvatar() {
   const isAnswering = state.isSpeaking;
 
   let currentImg = 'neutral.jpg';
-  if (isThinking) currentImg = 'thinking.jpg';
-  else if (isAnswering) currentImg = 'answering.jpg';
+  
+  if (isThinking) {
+    currentImg = 'thinking.jpg';
+  } else if (isAnswering) {
+    const toneMap = {
+      'question': 'thinking.jpg',
+      'confused': 'thinking.jpg',
+      'negative': 'angry.jpg',
+      'sarcasm': 'angry.jpg',
+      'affirmation': 'happy.jpg',
+      'neutral': 'answering.jpg'
+    };
+    // Toma la imagen de la emoción, o si no hay (o es neutral), pone la rata con lentes (answering)
+    currentImg = toneMap[state.currentTone] || 'answering.jpg';
+  }
 
   if (avatarImg && !avatarImg.src.endsWith(currentImg)) {
     avatarImg.src = `assets/${currentImg}`;
