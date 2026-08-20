@@ -3,20 +3,24 @@ const cors = require('cors');
 const path = require('path');
 const { getSystemPrompt } = require('./personality');
 
+// Configura la aplicación y el puerto de internet por el que va a recibir conexiones
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
+// Permite que navegadores de otros sitios hablen con nuestro servidor sin errores de seguridad (CORS)
 app.use(cors({ origin: true }));
+// Permite que el servidor pueda entender datos enviados en formato JSON (como mensajes de texto)
 app.use(express.json({ limit: '1mb' }));
 
-// Servir estáticos desde la carpeta public/
+// Prepara el servidor para enviar las páginas web, imágenes y archivos de la carpeta 'public' al visitante
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// healthcheck
+// Es una ruta de prueba súper básica para comprobar rápidamente si el servidor sigue encendido y sin caerse
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'Holoprojector backend' });
 });
 
+// Recibe los mensajes que escribe el usuario, le suma las reglas de cómo actuar (el system prompt) y le pide a la IA una respuesta
 app.post('/api/chat', async (req, res) => {
   try {
     const text = String(req.body?.text || '').trim();
@@ -42,13 +46,14 @@ app.post('/api/chat', async (req, res) => {
 
     const result = await provider.chat(messages);
 
-    return res.json({ text: result.text });
+    return res.json({ text: result.text, emotion: result.emotion });
   } catch (error) {
     console.error('Server error:', error);
     return res.status(500).json({ error: error.message || 'Error interno del servidor.' });
   }
 });
 
+// Da la orden final para arrancar el servidor en el puerto indicado y se queda escuchando visitas permanentemente
 app.listen(port, () => {
   console.log(`Holoprojector backend running on port ${port}`);
 });

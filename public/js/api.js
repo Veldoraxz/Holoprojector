@@ -3,6 +3,7 @@ import { updateMeta } from './history.js';
 import { setStatus, startBtn } from './ui.js';
 
 //API EXTERNA
+// Se comunica con el backend del servidor, mandándole el chat completo para que la IA arme su respuesta
 export async function preguntarGroq(texto, conversationHistory, responseMode) {
   setStatus('Pensando...');
   startBtn.classList.add('loading');
@@ -27,7 +28,8 @@ export async function preguntarGroq(texto, conversationHistory, responseMode) {
     }
 
     const raw = data?.text || 'No pude responder ahora mismo.';
-    return raw;
+    const emotion = data?.emotion || 'neutral';
+    return { text: raw, emotion };
   } catch (error) {
     console.error('Error backend:', error);
     return 'No pude procesar la respuesta.';
@@ -36,18 +38,8 @@ export async function preguntarGroq(texto, conversationHistory, responseMode) {
   }
 }
 
-export function detectTone(text) {
-  const lowerText = text.toLowerCase();
 
-  if (/^[^.!?]*\?/.test(lowerText) || /^¿/.test(lowerText)) return 'question';
-  if (/^(sí|si|claro|dale|hecho|listo|perfecto|ok|okey|bueno)\b/i.test(lowerText)) return 'affirmation';
-  if (/jejej|jajaj|haha|😏|pero bueno|mirá que|vos decí/.test(lowerText)) return 'sarcasm';
-  if (/no sé|no estoy seguro|creo que|capaz que|quizás|dudoso/.test(lowerText)) return 'confused';
-  if (/no|mal|horrible|odio|peor|nunca|jamás|imposible/.test(lowerText)) return 'negative';
-
-  return 'neutral';
-}
-
+// Traduce símbolos raros (como *, @, #) a palabras escritas para que el sintetizador de voz sepa cómo pronunciarlos
 export function convertSymbolsToWords(text) {
   return text
     .replace(/\*/g, 'asterisco')
@@ -69,6 +61,7 @@ export function convertSymbolsToWords(text) {
     .replace(/\//g, 'barra');
 }
 
+// Limpia un poco el texto final antes de hablar, borrando espacios extra y pequeños errores
 export function formatAssistantReply(text) {
   if (!text) return '¿Qué querés que haga?';
   return text

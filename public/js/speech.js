@@ -1,9 +1,9 @@
 import { state } from './app.js';
 import { RESTART_DELAY_MS, WORD_DELAY_MS, WORD_FADE_DELAY_MS, SPEECH_PULSE_INTERVAL_MS, TONE_VOICE } from './config.js';
 import { subtitlesEl, subtitleTimers, clearSubtitleTimers, setStatus, setBtnLabel, newConvBtn, setResponseMode } from './ui.js';
-import { triggerPulse } from './orb.js';
+import { triggerPulse } from './avatar.js';
 import { playSound } from './sounds.js';
-import { convertSymbolsToWords, preguntarGroq, detectTone } from './api.js';
+import { convertSymbolsToWords, preguntarGroq } from './api.js';
 import { persistSession } from './storage.js';
 import { updateMeta } from './history.js';
 
@@ -11,6 +11,7 @@ import { updateMeta } from './history.js';
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 export let recognition = null;
 
+// Prepara el micrófono para escuchar en español y define qué hacer cuando escucha algo o si hay un error
 export function initSpeechRecognition() {
   if (!SpeechRecognition) return;
 
@@ -29,7 +30,7 @@ export function initSpeechRecognition() {
     if (!state.isSpeaking && !state.isProcessing) {
       setStatus('No pude escuchar. Reintentando...');
       setTimeout(() => {
-        try { recognition.start(); } catch (err) {}
+        try { recognition.start(); } catch (err) { }
       }, 1200);
     }
   };
@@ -44,18 +45,27 @@ export function initSpeechRecognition() {
     updateMeta();
     state.isListening = false;
     state.isProcessing = true;
-    
-    const respuesta = await preguntarGroq(texto, state.conversationHistory, state.responseMode);
-    
+
+    const result = await preguntarGroq(texto, state.conversationHistory, state.responseMode);
+
     state.isProcessing = false;
-    
+
+    let respuesta = '';
+    let emocion = 'neutral';
+
+    if (typeof result === 'string') {
+      respuesta = result;
+    } else {
+      respuesta = result.text || 'No pude procesar la respuesta.';
+      emocion = result.emotion || 'neutral';
+    }
+
     state.conversationHistory.push({ role: 'assistant', content: respuesta, ts: Date.now() });
     persistSession();
     updateMeta();
 
-    state.currentTone = detectTone(respuesta);
-    state.orbColorOverride = state.currentTone;
-    
+    state.currentTone = emocion;
+
     hablar(respuesta);
   };
 
@@ -85,6 +95,8 @@ function chooseSpanishVoice() {
   return voices.find(v => /es/i.test(v.lang)) || voices[0] || null;
 }
 
+//SINTESIS DE VOZ
+// Pide permiso al navegador para cargar las voces disponibles antes de que Kit intente hablar por primera vez
 export function preloadVoices() {
   if (!('speechSynthesis' in window)) return;
   const forceLoad = () => { window.speechSynthesis.getVoices(); };
@@ -137,8 +149,8 @@ function showWords(text) {
   });
 }
 
-function getVoiceParams(text) {
-  const tone = detectTone(text) || 'neutral';
+function getVoiceParams() {
+  const tone = state.currentTone || 'neutral';
   const base = TONE_VOICE[tone] || TONE_VOICE.neutral;
   // Personalidad fija: seria
   const preset = { pitch: 0.95, rate: 0.95 };
@@ -148,6 +160,7 @@ function getVoiceParams(text) {
   };
 }
 
+// Transforma el texto de respuesta de Kit a audio y lo hace sonar por los parlantes, animando los subtítulos palabra por palabra
 export function hablar(texto) {
   if (!texto || !('speechSynthesis' in window)) {
     state.isSpeaking = false;
@@ -165,7 +178,7 @@ export function hablar(texto) {
 
   const textoParaLeer = convertSymbolsToWords(texto);
   const utterance = new SpeechSynthesisUtterance(textoParaLeer);
-  const voiceParams = getVoiceParams(texto);
+  const voiceParams = getVoiceParams();
   utterance.lang = 'es-AR';
   utterance.rate = voiceParams.rate;
   utterance.pitch = voiceParams.pitch;
@@ -193,7 +206,6 @@ export function hablar(texto) {
     if (speechId !== state.currentSpeechId) return;
     state.isSpeaking = false;
     stopSpeechPulseLoop();
-    state.orbColorOverride = null;
     setStatus('Escuchando...');
     setResponseMode(state.responseMode);
     if (state.conversationHistory.length > 0) {
@@ -201,7 +213,7 @@ export function hablar(texto) {
     }
     setTimeout(() => {
       if (recognition && !state.isProcessing) {
-        try { recognition.start(); } catch (err) {}
+        try { recognition.start(); } catch (err) { }
       }
     }, 500);
   };
@@ -214,6 +226,7 @@ export function hablar(texto) {
   window.speechSynthesis.speak(utterance);
 }
 
+// Prende el micrófono para empezar a escuchar al usuario
 export function startListening() {
   if (state.isSpeaking || state.isProcessing || state.isListening) return;
 
@@ -249,15 +262,15 @@ function stopSpeechPulseLoop() {
   state.voiceIntensity = 0;
 }
 
+// Hace que si tocás a Kit mientras habla, se calle al instante y tire una respuesta aleatoria (como si lo interrumpieras)
 export function playInterruptResponse() {
   const interruptResponses = [
     { text: '¿eh?', tone: 'confused' },
-    { text: 'Dale, me callé.', tone: 'compliant' },
+    { text: 'Dale, me callo.', tone: 'compliant' },
     { text: 'Bueno, bueno...', tone: 'compliant' },
     { text: 'Me cortaste en lo mejor.', tone: 'sarcastic' },
-    { text: 'Ñeeee...', tone: 'confused' },
-    { text: 'Ok, ok, me silenciás.', tone: 'compliant' },
-    { text: 'Ay, espera que iba para mejor esto.', tone: 'sarcastic' }
+    { text: 'Huh...', tone: 'confused' },
+    { text: 'Así sos.', tone: 'compliant' },
   ];
 
   clearSubtitleTimers();
@@ -268,8 +281,6 @@ export function playInterruptResponse() {
 
   const triggerFlash = () => {
     state.voiceIntensity = 0.8;
-    state.rippleActive = true;
-    state.rippleTime = 0;
     playSound('deactivate');
 
     setTimeout(() => {
@@ -308,7 +319,7 @@ export function playInterruptResponse() {
     setResponseMode(state.responseMode);
     setTimeout(() => {
       if (recognition && !state.isProcessing) {
-        try { recognition.start(); } catch (err) {}
+        try { recognition.start(); } catch (err) { }
       }
     }, 500);
   };

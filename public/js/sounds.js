@@ -1,4 +1,5 @@
 //SONIDOS
+// Genera sonidos electrónicos (beeps, clicks, etc.) usando matemática pura sin necesidad de cargar archivos de audio (mp3/wav)
 export function playSound(type) {
   try {
     const audioContext = window.audioContext || (window.audioContext = new (window.AudioContext || window.webkitAudioContext)());

@@ -1,18 +1,18 @@
 import { loadPersistentState, clearConversation } from './storage.js';
 import { applyThemeUI, setResponseMode, startBtn, viewModeBtn, paletteBtn, themeBtn, historyBtn, historyCloseBtn, newConvBtn, setHoverState, toggleViewMode, togglePalette, toggleTheme } from './ui.js';
 import { showHistory, updateMeta, historyOverlayEl } from './history.js';
-import { initOrb, canvas } from './orb.js';
+import { initAvatar, avatarContainer } from './avatar.js';
 import { initSpeechRecognition, preloadVoices, startListening, playInterruptResponse } from './speech.js';
 import { playSound } from './sounds.js';
 
 //ESTADO GLOBAL
+// Es la memoria temporal de Kit mientras la página está abierta (sabe si está hablando, qué tono usa, cuántos mensajes van, etc.)
 export const state = {
   conversationHistory: [],
   responseMode: 'compact',
   currentSpeechId: 0,
   hasStartedOnce: false,
   currentTone: 'neutral',
-  orbColorOverride: null,
   sessionMsgCount: 0,
   
   viewMode: 'projection',
@@ -23,19 +23,16 @@ export const state = {
   isProcessing: false,
   isListening: false,
   voiceIntensity: 0,
-  speechPulseTimer: null,
-  parallaxRotation: 0,
-  rippleActive: false,
-  rippleTime: 0,
-  rippleMaxRadius: 200
+  speechPulseTimer: null
 };
 
 //INICIALIZACION
+// Es lo primero que corre cuando abrís la página: carga la memoria, prepara la voz, el micrófono y dibuja todo
 function init() {
   loadPersistentState();
   initSpeechRecognition();
   preloadVoices();
-  initOrb();
+  initAvatar();
 
   applyThemeUI();
   updateMeta();
@@ -49,6 +46,7 @@ function init() {
 }
 
 //EVENTOS
+// Conecta los botones y clics de la pantalla con las funciones del código (ej: qué pasa al hacer clic en 'Iniciar')
 function setupEvents() {
   startBtn.addEventListener('mouseenter', () => {
     if (!state.isSpeaking && state.hasStartedOnce) setHoverState();
@@ -82,7 +80,7 @@ function setupEvents() {
     import('./ui.js').then(ui => ui.setStatus(nextMode === 'compact' ? 'Modo breve activo.' : 'Modo extendido activo.'));
   });
 
-  canvas.addEventListener('click', () => {
+  avatarContainer.addEventListener('click', () => {
     if (state.isSpeaking) {
       playInterruptResponse();
       return;
