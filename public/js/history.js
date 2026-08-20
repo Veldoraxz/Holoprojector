@@ -7,6 +7,7 @@ export const qualityFillEl = document.getElementById('qualityFill');
 export const historyOverlayEl = document.getElementById('historyOverlay');
 export const historyBodyEl = document.getElementById('historyBody');
 
+// Actualiza en pantalla la cantidad de mensajes y dibuja la barra de "calidad" de la charla
 export function updateMeta() {
   msgCountEl.textContent = 'Mensajes: ' + state.sessionMsgCount;
 
@@ -20,6 +21,7 @@ export function updateMeta() {
   }
 }
 
+// Calcula un porcentaje de "calidad" de la conversación basándose en qué tanto preguntas y qué tan largas son las respuestas
 export function computeQuality(history) {
   const userMsgs = history.filter(msg => msg.role === 'user');
   const asstMsgs = history.filter(msg => msg.role === 'assistant');
@@ -43,6 +45,7 @@ export function computeQuality(history) {
   return Math.min(100, Math.round(score));
 }
 
+// Dibuja la lista completa de mensajes (chat) en la ventana del historial
 export function renderHistory() {
   historyBodyEl.innerHTML = '';
   if (!state.conversationHistory.length) {
@@ -79,6 +82,7 @@ export function renderHistory() {
   historyBodyEl.scrollTop = historyBodyEl.scrollHeight;
 }
 
+// Abre la ventana flotante para poder leer el historial completo de la charla
 export function showHistory() {
   renderHistory();
   historyOverlayEl.classList.add('show');

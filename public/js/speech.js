@@ -1,7 +1,7 @@
 import { state } from './app.js';
 import { RESTART_DELAY_MS, WORD_DELAY_MS, WORD_FADE_DELAY_MS, SPEECH_PULSE_INTERVAL_MS, TONE_VOICE } from './config.js';
 import { subtitlesEl, subtitleTimers, clearSubtitleTimers, setStatus, setBtnLabel, newConvBtn, setResponseMode } from './ui.js';
-import { triggerPulse } from './orb.js';
+import { triggerPulse, updateAvatarEmotion } from './avatar.js';
 import { playSound } from './sounds.js';
 import { convertSymbolsToWords, preguntarGroq, detectTone } from './api.js';
 import { persistSession } from './storage.js';
@@ -11,6 +11,7 @@ import { updateMeta } from './history.js';
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 export let recognition = null;
 
+// Prepara el micrófono para escuchar en español y define qué hacer cuando escucha algo o si hay un error
 export function initSpeechRecognition() {
   if (!SpeechRecognition) return;
 
@@ -54,7 +55,7 @@ export function initSpeechRecognition() {
     updateMeta();
 
     state.currentTone = detectTone(respuesta);
-    state.orbColorOverride = state.currentTone;
+    updateAvatarEmotion(state.currentTone);
     
     hablar(respuesta);
   };
@@ -85,6 +86,8 @@ function chooseSpanishVoice() {
   return voices.find(v => /es/i.test(v.lang)) || voices[0] || null;
 }
 
+//SINTESIS DE VOZ
+// Pide permiso al navegador para cargar las voces disponibles antes de que Kit intente hablar por primera vez
 export function preloadVoices() {
   if (!('speechSynthesis' in window)) return;
   const forceLoad = () => { window.speechSynthesis.getVoices(); };
@@ -148,6 +151,7 @@ function getVoiceParams(text) {
   };
 }
 
+// Transforma el texto de respuesta de Kit a audio y lo hace sonar por los parlantes, animando los subtítulos palabra por palabra
 export function hablar(texto) {
   if (!texto || !('speechSynthesis' in window)) {
     state.isSpeaking = false;
@@ -193,7 +197,7 @@ export function hablar(texto) {
     if (speechId !== state.currentSpeechId) return;
     state.isSpeaking = false;
     stopSpeechPulseLoop();
-    state.orbColorOverride = null;
+    updateAvatarEmotion('neutral');
     setStatus('Escuchando...');
     setResponseMode(state.responseMode);
     if (state.conversationHistory.length > 0) {
@@ -214,6 +218,7 @@ export function hablar(texto) {
   window.speechSynthesis.speak(utterance);
 }
 
+// Prende el micrófono para empezar a escuchar al usuario
 export function startListening() {
   if (state.isSpeaking || state.isProcessing || state.isListening) return;
 
@@ -249,6 +254,7 @@ function stopSpeechPulseLoop() {
   state.voiceIntensity = 0;
 }
 
+// Hace que si tocás a Kit mientras habla, se calle al instante y tire una respuesta aleatoria (como si lo interrumpieras)
 export function playInterruptResponse() {
   const interruptResponses = [
     { text: '¿eh?', tone: 'confused' },
@@ -268,8 +274,6 @@ export function playInterruptResponse() {
 
   const triggerFlash = () => {
     state.voiceIntensity = 0.8;
-    state.rippleActive = true;
-    state.rippleTime = 0;
     playSound('deactivate');
 
     setTimeout(() => {

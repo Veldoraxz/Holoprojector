@@ -1,19 +1,23 @@
 //CONFIGURACION
+// Dirección donde está alojado el servidor de IA (vacío porque en este caso están juntos en el mismo servidor)
 export const API_BASE = '';
 export const ASSISTANT_NAME = 'Kit';
 
+// Tiempos de espera (en milisegundos) que controlan qué tan rápido reacciona la voz, los subtítulos y el avatar
 export const RESTART_DELAY_MS = 250;
 export const SPEECH_PULSE_INTERVAL_MS = 170;
 export const WORD_DELAY_MS = 380;
 export const WORD_FADE_DELAY_MS = 650;
 export const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Nombres o 'llaves' que se usan para buscar y guardar preferencias del usuario en el navegador
 export const PERSISTENT_KEY = 'holoprojector_conversation_history';
 export const SESSION_MODE_KEY = 'holoprojector_mode';
 export const SESSION_VIEW_KEY = 'holoprojector_view_mode';
 export const SESSION_PALETTE_KEY = 'holoprojector_palette';
 export const SESSION_THEME_KEY = 'holoprojector_theme';
 
+// Define cómo suena la voz de Kit (más agudo, más rápido, etc.) dependiendo del estado de ánimo detectado
 export const TONE_VOICE = {
   question:   { pitch: 1.25, rate: 1.0  },
   affirmation:{ pitch: 1.2,  rate: 1.05 },

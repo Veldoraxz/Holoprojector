@@ -5,6 +5,7 @@ import { playSound } from './sounds.js';
 import { state } from './app.js';
 
 //ALMACENAMIENTO
+// Lee datos temporales que se guardan solo mientras la pestaña está abierta (se borran al cerrar)
 export function readSession(key, fallback) {
   try {
     const value = sessionStorage.getItem(key);
@@ -14,6 +15,7 @@ export function readSession(key, fallback) {
   }
 }
 
+// Guarda preferencias o datos temporales en la sesión del navegador para que no se pierdan al recargar la página
 export function writeSession(key, value) {
   try {
     sessionStorage.setItem(key, value);
@@ -22,6 +24,7 @@ export function writeSession(key, value) {
   }
 }
 
+// Guarda la conversación y opciones importantes de forma permanente en la computadora del usuario
 export function persistSession() {
   try {
     localStorage.setItem(PERSISTENT_KEY, JSON.stringify(state.conversationHistory));
@@ -31,6 +34,7 @@ export function persistSession() {
   }
 }
 
+// Al abrir la página, recupera la historia guardada y borra automáticamente los mensajes que tengan más de 7 días de antigüedad
 export function loadPersistentState() {
   try {
     const saved = localStorage.getItem(PERSISTENT_KEY);
@@ -70,6 +74,7 @@ export function loadPersistentState() {
   state.themeMode = readSession(SESSION_THEME_KEY, 'dark');
 }
 
+// Borra todo el historial de charla actual para empezar una conversación desde cero
 export function clearConversation() {
   state.conversationHistory = [];
   state.sessionMsgCount = 0;

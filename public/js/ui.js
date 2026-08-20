@@ -16,16 +16,21 @@ export const historyCloseBtn = document.getElementById('historyClose');
 
 export let subtitleTimers = [];
 
+export let subtitleTimers = [];
+
+// Frena y borra los temporizadores que controlan la aparición de subtítulos
 export function clearSubtitleTimers() {
   subtitleTimers.forEach(timer => clearTimeout(timer));
   subtitleTimers.length = 0;
 }
 
+// Cambia el texto del botón principal (por ejemplo, de "Iniciar" a "Cortar" o "Modo breve")
 export function setBtnLabel(text) {
   const label = startBtn.querySelector('.btn-label');
   if (label) label.textContent = text;
 }
 
+// Muestra un mensaje corto en pantalla (como "Escuchando..." o "Pensando...") con una animación suave
 export function setStatus(message) {
   statusEl.classList.remove('fade-in');
   void statusEl.offsetWidth;
@@ -33,6 +38,7 @@ export function setStatus(message) {
   statusEl.classList.add('fade-in');
 }
 
+// Ajusta el modo de respuesta de la IA (respuestas cortas o detalladas) y actualiza el botón en consecuencia
 export function setResponseMode(mode) {
   state.responseMode = mode;
   const isCompact = mode === 'compact';
@@ -51,11 +57,13 @@ export function setResponseMode(mode) {
   setBtnLabel(isCompact ? 'Modo breve' : 'Modo extendido');
 }
 
+// Cambia temporalmente el texto del botón cuando le pasas el mouse por encima
 export function setHoverState() {
   if (state.isSpeaking || !state.hasStartedOnce) return;
   setBtnLabel('Cambiar modo');
 }
 
+// Aplica los colores, temas y estilos visuales seleccionados por el usuario (modo claro, oscuro, proyección, etc.)
 export function applyThemeUI() {
   const isPreview = state.viewMode === 'preview';
 
@@ -73,6 +81,7 @@ export function applyThemeUI() {
   }
 }
 
+// Alterna entre el modo 'Proyección' (fondo negro para el holograma) y 'Preview' (con colores de fondo)
 export function toggleViewMode() {
   playSound('click');
   state.viewMode = state.viewMode === 'projection' ? 'preview' : 'projection';
@@ -83,6 +92,7 @@ export function toggleViewMode() {
     : 'Modo preview: solo para probar sin acrílico.');
 }
 
+// Cambia la paleta de colores del fondo cuando estás en modo Preview (entre rosa y azul)
 export function togglePalette() {
   playSound('click');
   state.paletteMode = state.paletteMode === 'rosa' ? 'azul' : 'rosa';
@@ -90,6 +100,7 @@ export function togglePalette() {
   applyThemeUI();
 }
 
+// Alterna el modo Preview entre tema oscuro (para poca luz) y tema claro (para lugares iluminados)
 export function toggleTheme() {
   playSound('click');
   state.themeMode = state.themeMode === 'dark' ? 'light' : 'dark';

@@ -1,4 +1,5 @@
 //API EXTERNA
+// Se encarga de enviar la conversación a los servidores de Groq en internet y traer la respuesta de la IA
 async function chat(messages) {
   const groqApiKey = process.env.GROQ_API_KEY;
   if (!groqApiKey) {

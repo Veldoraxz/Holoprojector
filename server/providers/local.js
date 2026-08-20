@@ -1,4 +1,5 @@
 //API LOCAL
+// Hace lo mismo que Groq pero conectándose a una IA descargada en tu propia computadora, ideal para no depender de internet
 async function chat(messages) {
   // Fase B: Reemplazo para consultar modelo local servido por Ollama / llama.cpp
   // Usar URL local, ej: http://localhost:11434/v1/chat/completions

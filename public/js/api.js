@@ -3,6 +3,7 @@ import { updateMeta } from './history.js';
 import { setStatus, startBtn } from './ui.js';
 
 //API EXTERNA
+// Se comunica con el backend de nuestro servidor, mandándole el chat completo para que la IA arme su respuesta
 export async function preguntarGroq(texto, conversationHistory, responseMode) {
   setStatus('Pensando...');
   startBtn.classList.add('loading');
@@ -36,6 +37,7 @@ export async function preguntarGroq(texto, conversationHistory, responseMode) {
   }
 }
 
+// Revisa las palabras que dice Kit para adivinar su "estado de ánimo" (si pregunta, afirma, duda, etc.) y así cambiar su expresión
 export function detectTone(text) {
   const lowerText = text.toLowerCase();
 
@@ -48,6 +50,7 @@ export function detectTone(text) {
   return 'neutral';
 }
 
+// Traduce símbolos raros (como *, @, #) a palabras escritas para que el sintetizador de voz sepa cómo pronunciarlos
 export function convertSymbolsToWords(text) {
   return text
     .replace(/\*/g, 'asterisco')
@@ -69,6 +72,7 @@ export function convertSymbolsToWords(text) {
     .replace(/\//g, 'barra');
 }
 
+// Limpia un poco el texto final antes de hablar, borrando espacios extra y pequeños errores
 export function formatAssistantReply(text) {
   if (!text) return '¿Qué querés que haga?';
   return text
